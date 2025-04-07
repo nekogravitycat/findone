@@ -1,8 +1,4 @@
-﻿using server.Models;
-using System;
-using System.Collections.Generic;
-
-namespace server.Models
+﻿namespace server.Models
 {
     public enum RoomStatus
     {
@@ -19,11 +15,10 @@ namespace server.Models
         public int Round { get; set; } = 5; // default: 5 rounds
         public int TimeLimit { get; set; } = 30; // default: 30 seconds
         public RoomStatus Status { get; set; } = RoomStatus.Waiting;
-
         // target items for identification
-        public required List<RoomTarget> Targets { get; set; }
+        public List<RoomTarget> Targets { get; set; } = new List<RoomTarget>();
         // relation to users
-        public List<User>? Users { get; set; }
+        public List<User> Users { get; set; } = new List<User>();
     }
 
     public class RoomTarget
@@ -31,7 +26,6 @@ namespace server.Models
         public int Id { get; set; }
         public required string RoomId { get; set; }
         public required Room Room { get; set; }
-        // current round index
         public int RoundIndex { get; set; }
         public required string TargetName { get; set; }
     }

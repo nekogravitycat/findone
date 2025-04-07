@@ -14,7 +14,6 @@ namespace server.Data
         public DbSet<RoomTarget> RoomTargets { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserScore> UserScores { get; set; }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Room primary key
