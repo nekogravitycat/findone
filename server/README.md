@@ -64,8 +64,9 @@
    sudo apt install redis-server
    # 啟動 Redis 服務
    sudo service redis-server start
+   redis-cli
    # 驗證 Redis 是否正在運行
-   redis-cli ping
+   ping
    ```
 3. 安裝必要套件
    ```bash
