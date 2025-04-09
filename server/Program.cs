@@ -1,5 +1,6 @@
 using StackExchange.Redis;
 using server.Hubs;
+using server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,10 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Conn
 builder.Services.AddSignalR();
 
 builder.Services.AddControllers();
+
+builder.Services.AddSingleton<ImageAnalysisService>();
+builder.Services.AddSingleton<GoogleAIService>();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
