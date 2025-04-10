@@ -24,12 +24,6 @@ namespace server.Data
             modelBuilder.Entity<User>()
                 .HasKey(u => u.UserId);
 
-            // set RoomId as foreign key in User
-            modelBuilder.Entity<Room>()
-                .HasMany(r => r.Users)
-                .WithOne(u => u.Room)
-                .HasForeignKey(u => u.RoomId);
-
             // set RoomId as foreign key in RoomTarget
             modelBuilder.Entity<RoomTarget>()
                 .HasKey(rt => rt.Id);

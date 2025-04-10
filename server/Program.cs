@@ -15,6 +15,9 @@ builder.Services.AddControllers();
 
 builder.Services.AddSingleton<ImageAnalysisService>();
 builder.Services.AddSingleton<GoogleAIService>();
+builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<RoomService>();
+builder.Services.AddSingleton<UserService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

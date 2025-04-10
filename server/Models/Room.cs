@@ -18,7 +18,7 @@
         // target items for identification
         public List<RoomTarget> Targets { get; set; } = new List<RoomTarget>();
         // relation to users
-        public List<User> Users { get; set; } = new List<User>();
+        public HashSet<Guid> UserIds { get; set; } = new HashSet<Guid>();
     }
 
     public class RoomTarget
