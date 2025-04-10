@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
+using System.Runtime.InteropServices;
 
 namespace server.Services
 {
@@ -24,6 +25,17 @@ namespace server.Services
                 return;
             }
             await caller.SendAsync("UserFound", user);
+        }
+
+        public async Task HandleGetRoom(HubCallerContext context, IClientProxy caller, string roomId)
+        {
+            var room = await _roomService.GetRoom(roomId);
+            if(room == null)
+            {
+                await caller.SendAsync("RoomNotFound", roomId);
+                return;
+            }
+            await caller.SendAsync("RoomFound", room);
         }
 
         public async Task HandleCreateRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string userName, int round, int timeLimit)

@@ -12,6 +12,13 @@ public class RoomService
         _redis = redis;
     }
 
+    public async Task<Room?> GetRoom(string roomId)
+    {
+        var db = _redis.GetDatabase(); 
+        var json = await db.StringGetAsync($"room:{roomId}");
+        return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<Room>(json!);
+    }
+
     public async Task<Room> CreateRoom(User hostUser, int round, int timeLimit)
     {
         string roomId = IdGenerator.GenerateRoomId();
