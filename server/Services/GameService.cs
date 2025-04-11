@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.SignalR;
-using System.Runtime.InteropServices;
+﻿using Microsoft.AspNetCore.SignalR;
+using server.Models;
 
 namespace server.Services
 {
@@ -9,11 +8,13 @@ namespace server.Services
     {
         private readonly RoomService _roomService;
         private readonly UserService _userService;
+        private readonly ImageService _imageService;
 
-        public GameService(RoomService roomService, UserService userService)
+        public GameService(RoomService roomService, UserService userService, ImageService imageService)
         {
             _roomService = roomService;
             _userService = userService;
+            _imageService = imageService;
         }
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
@@ -65,10 +66,38 @@ namespace server.Services
             await clients.Group(roomId).SendAsync("GameStarted", roomId, room);
         }
 
-        public async Task HandleCheckAnswer(IHubCallerClients clients, string roomId, string userId, int roundIndex, string base64Image)
+        public async Task HandleSubmitImage(IClientProxy caller, string roomId, string userId, int roundIndex, string base64Image)
         {
-            // todo: image analysis logic
-            await clients.Caller.SendAsync("AnswerChecked", roomId, userId, roundIndex, "Pending");
+            try
+            {
+                // validate user
+                User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
+
+                // validate room
+                Room room = await _roomService.GetRoom(roomId) ?? throw new Exception("Room not found");
+
+                // analyze
+                ImageResponse result = await _imageService.AnalyzeImage(base64Image) ?? throw new Exception("Image analysis failed");
+
+                // check if image is correct
+                float confidence = await _imageService.isImageCorrect(result, roomId, userId, roundIndex) ?? throw new Exception("Image is not correct");
+
+                // update user
+                UserScore user_score = new UserScore
+                {
+                    UserId = Guid.Parse(userId),
+                    User = user,
+                    RoundIndex = roundIndex,
+                    Score = confidence
+                };
+                await _userService.AddScore(user_score);
+
+                await caller.SendAsync("ImageAnalysisSuccessed");
+            }
+            catch (Exception ex)
+            {
+                await caller.SendAsync("ImageAnalysisFailed", ex.Message);
+            }
         }
     }
 }

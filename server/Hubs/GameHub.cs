@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text.Json;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using server.Services;
 using StackExchange.Redis;
 
@@ -32,8 +30,8 @@ namespace server.Hubs
         public async Task GameStart(string roomId)
             => await _gameService.HandleStartGame(Clients, roomId);
 
-        public async Task CheckAnswer(string roomId, string userId, int roundIndex, string base64Image)
-            => await _gameService.HandleCheckAnswer(Clients, roomId, userId, roundIndex, base64Image);
+        public async Task SubmitImage(string roomId, string userId, int roundIndex, string base64Image)
+            => await _gameService.HandleSubmitImage(Clients.Caller, roomId, userId, roundIndex, base64Image);
 
         public async Task SendMessage(string user, string message)
             => await Clients.All.SendAsync("ReceiveMessage", user, message);

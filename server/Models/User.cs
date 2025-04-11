@@ -11,7 +11,7 @@
 
     public class UserScore
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid UserId { get; set; }
         public required User User { get; init; }
         public int RoundIndex { get; set; }

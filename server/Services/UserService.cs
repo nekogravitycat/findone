@@ -1,6 +1,7 @@
 ﻿using server.Models;
 using System.Text.Json;
 using StackExchange.Redis;
+using Microsoft.AspNetCore.Identity;
 
 public class UserService
 {
@@ -29,6 +30,18 @@ public class UserService
     {
         var db = _redis.GetDatabase();
         await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        return user;
+    }
+
+    public async Task<User> AddScore(UserScore userScore)
+    {
+        var db = _redis.GetDatabase();
+        var json = await db.StringGetAsync($"user:{userScore.UserId}");
+        User user = (string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<User>(json!)) ?? throw new Exception("User not found");
+        
+        user.Scores.Add(userScore);
+
+        user = await UpdateUser(user);
         return user;
     }
 

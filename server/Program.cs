@@ -13,7 +13,7 @@ builder.Services.AddSignalR();
 
 builder.Services.AddControllers();
 
-builder.Services.AddSingleton<ImageAnalysisService>();
+builder.Services.AddSingleton<ImageService>();
 builder.Services.AddSingleton<GoogleAIService>();
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomService>();

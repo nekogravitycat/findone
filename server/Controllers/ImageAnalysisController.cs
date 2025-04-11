@@ -9,9 +9,9 @@ namespace server.Controllers
 
     public class ImageAnalysisController : Controller
     {
-        private readonly ImageAnalysisService _imageAnalysisService;
+        private readonly ImageService _imageAnalysisService;
 
-        public ImageAnalysisController(ImageAnalysisService imageAnalysisService)
+        public ImageAnalysisController(ImageService imageAnalysisService)
         {
             _imageAnalysisService = imageAnalysisService;
         }
