@@ -14,8 +14,8 @@ public class RoomService
 
     public async Task<Room?> GetRoom(string roomId)
     {
-        var db = _redis.GetDatabase(); 
-        var json = await db.StringGetAsync($"room:{roomId}");
+        IDatabase db = _redis.GetDatabase(); 
+        RedisValue json = await db.StringGetAsync($"room:{roomId}");
         return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<Room>(json!);
     }
 
@@ -24,7 +24,7 @@ public class RoomService
         string roomId = IdGenerator.GenerateRoomId();
         string[] targets = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 
-        var room = new Room
+        Room room = new Room
         {
             RoomId = roomId,
             HostUserId = hostUser.UserId,
@@ -41,14 +41,14 @@ public class RoomService
             Status = RoomStatus.Waiting
         };
 
-        var db = _redis.GetDatabase();
+        IDatabase db = _redis.GetDatabase();
         await db.StringSetAsync($"room:{roomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
         return room;
     }
 
     public async Task<Room> JoinRoom(string roomId, User user)
     {
-        var db = _redis.GetDatabase();
+        IDatabase db = _redis.GetDatabase();
 
         var json = await db.StringGetAsync($"room:{roomId}");
         var room = JsonSerializer.Deserialize<Room>(json!) ?? throw new Exception("Room not found");
@@ -59,9 +59,9 @@ public class RoomService
 
     public async Task<Room> StartGame(string roomId)
     {
-        var db = _redis.GetDatabase();
-        var json = await db.StringGetAsync($"room:{roomId}");
-        var room = JsonSerializer.Deserialize<Room>(json!) ?? throw new Exception("Room not found");
+        IDatabase db = _redis.GetDatabase();
+        RedisValue json = await db.StringGetAsync($"room:{roomId}");
+        Room room = JsonSerializer.Deserialize<Room>(json!) ?? throw new Exception("Room not found");
         room.Status = RoomStatus.InProgress;
         await db.StringSetAsync($"room:{roomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
         return room;

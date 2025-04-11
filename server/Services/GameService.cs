@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using server.Models;
+using System.Diagnostics;
 
 namespace server.Services
 {
@@ -19,38 +20,42 @@ namespace server.Services
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
         {
-            var user = await _userService.GetUser(userId);
-            if (user == null)
+            try
             {
-                await caller.SendAsync("UserNotFound", userId);
-                return;
+                User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
+                await caller.SendAsync("UserFound", user);
             }
-            await caller.SendAsync("UserFound", user);
+            catch (Exception ex)
+            {
+                await caller.SendAsync("UserNotFound", userId, ex.Message);
+            }
         }
 
         public async Task HandleGetRoom(HubCallerContext context, IClientProxy caller, string roomId)
         {
-            var room = await _roomService.GetRoom(roomId);
-            if(room == null)
+            try
             {
-                await caller.SendAsync("RoomNotFound", roomId);
-                return;
+                Room room = await _roomService.GetRoom(roomId) ?? throw new Exception("Room not found");
+                await caller.SendAsync("RoomFound", room);
             }
-            await caller.SendAsync("RoomFound", room);
+            catch (Exception ex)
+            {
+                await caller.SendAsync("RoomNotFound", roomId, ex.Message);
+            }
         }
 
         public async Task HandleCreateRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string userName, int round, int timeLimit)
         {
-            var user = await _userService.CreateUser(userName);
-            var room = await _roomService.CreateRoom(user, round, timeLimit);
+            User user = await _userService.CreateUser(userName);
+            Room room = await _roomService.CreateRoom(user, round, timeLimit);
             await groups.AddToGroupAsync(context.ConnectionId, room.RoomId);
             await caller.SendAsync("RoomCreated", room.RoomId);
         }
 
         public async Task HandleJoinRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string roomId, string userName)
         {
-            var user = await _userService.CreateUser(userName);
-            var room = await _roomService.JoinRoom(roomId, user);
+            User user = await _userService.CreateUser(userName);
+            Room room = await _roomService.JoinRoom(roomId, user);
 
             // update roomId
             user.RoomId = room.RoomId;
@@ -62,7 +67,7 @@ namespace server.Services
 
         public async Task HandleStartGame(IHubCallerClients clients, string roomId)
         {
-            var room = await _roomService.StartGame(roomId);
+            Room room = await _roomService.StartGame(roomId);
             await clients.Group(roomId).SendAsync("GameStarted", roomId, room);
         }
 

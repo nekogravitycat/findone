@@ -30,7 +30,7 @@ namespace server.Services
         public async Task<float?> isImageCorrect(ImageResponse obj, string roomId, string userId, int roundIndex)
         {
             // already check room is validate
-            Room? room = await _roomService.GetRoom(roomId);
+            Room room = (await _roomService.GetRoom(roomId))!;
             string target = room.Targets[roundIndex].TargetName;
             int i = 0;
 
