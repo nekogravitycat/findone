@@ -9,7 +9,7 @@
 #### 1. 建立連接
 1. 開啟 Postman
 2. 建立新的 WebSocket 請求
-3. 輸入 SignalR 連接 URL：`ws://localhost:5432/gamehub`
+3. 輸入 SignalR 連接 URL：`ws://localhost:5432/gamehub` (未來會拆成不同的 endpoint url)
 4. 在連接訊息中輸入：
 ```json
 {
@@ -18,23 +18,35 @@
 } 
 ```
 
-#### 2. 建立用戶
+#### 2. 獲取用戶資訊
 ```json
 {
     "type": 1,
     "invocationId": "1",
-    "target": "CreateUser",
+    "target": "GetUser",
     "arguments": [
-        "userName"
+        "userId"
     ]
 }
 ```
 
-#### 3. 建立房間
+#### 3. 獲取房間資訊
 ```json
 {
     "type": 1,
     "invocationId": "2",
+    "target": "GetRoom",
+    "arguments": [
+        "roomId"
+    ]
+}
+```
+
+#### 4. 建立房間
+```json
+{
+    "type": 1,
+    "invocationId": "3",
     "target": "CreateRoom",
     "arguments": [
         "userName",
@@ -44,12 +56,12 @@
 }
 ```
 
-#### 4. 加入房間
+#### 5. 加入房間
 ```json
 {
     "type": 1,
-    "invocationId": "3",
-    "target": "JoinRoom",
+    "invocationId": "4",
+    "target": "GameJoin",
     "arguments": [
         "roomId",
         "userName"
@@ -57,38 +69,40 @@
 }
 ```
 
-#### 5. 開始遊戲
+#### 6. 開始遊戲 ** 尚未完成
 ```json
 {
     "type": 1,
-    "invocationId": "4",
-    "target": "StartGame",
+    "invocationId": "5",
+    "target": "GameStart",
     "arguments": [
         "roomId"
     ]
 }
 ```
 
-#### 6. 檢查答案
+#### 7. 提交圖片
+
+> **base64Image 圖片大小僅支援至 5MB !**
+
 ```json
 {
     "type": 1,
-    "invocationId": "5",
-    "target": "CheckAnswer",
+    "invocationId": "6",
+    "target": "SubmitImage",
     "arguments": [
-        "roomId",
         "userId",
-        1,
+        "roundIndex",
         "base64Image"
     ]
 }
 ```
 
-#### 7. 發送訊息
+#### 8. 發送訊息
 ```json
 {
     "type": 1,
-    "invocationId": "6",
+    "invocationId": "7",
     "target": "SendMessage",
     "arguments": [
         "userName",
@@ -123,14 +137,27 @@
 ## Endpoints
 
 ### 1. 用戶相關
-#### 建立用戶
-- **方法名稱**: `CreateUser`
+#### 獲取用戶資訊
+- **方法名稱**: `GetUser`
 - **參數**:
-  - `userName`: string
-- **回傳事件**: `UserCreated`
+  - `userId`: string
+- **回傳事件**: `UserFound`
+  - 參數: `user`: User object
+- **回傳事件**: `UserNotFound`
   - 參數: `userId`: string
+  - 參數: `error message`: string
 
 ### 2. 房間相關
+#### 獲取房間資訊
+- **方法名稱**: `GetRoom`
+- **參數**:
+  - `roomId`: string
+- **回傳事件**: `RoomFound`
+  - 參數: `room`: Room object
+- **回傳事件**: `RoomNotFound`
+  - 參數: `roomId`: string
+  - 參數: `error message`: string
+
 #### 建立房間
 - **方法名稱**: `CreateRoom`
 - **參數**:
@@ -141,7 +168,7 @@
   - 參數: `roomId`: string
 
 #### 加入房間
-- **方法名稱**: `JoinRoom`
+- **方法名稱**: `GameJoin`
 - **參數**:
   - `roomId`: string
   - `userName`: string
@@ -151,7 +178,7 @@
     - `user`: User object
 
 #### 開始遊戲
-- **方法名稱**: `StartGame`
+- **方法名稱**: `GameStart`
 - **參數**:
   - `roomId`: string
 - **回傳事件**: `GameStarted`
@@ -160,16 +187,19 @@
     - `room`: Room object
 
 ### 3. 遊戲相關
-#### 檢查答案
-- **方法名稱**: `CheckAnswer`
+#### 提交圖片
+- **方法名稱**: `SubmitImage`
 - **參數**:
-  - `roomId`: string
   - `userId`: string
   - `roundIndex`: number
   - `base64Image`: string
-- **回傳事件**: 待補充
+- **回傳事件**: `ImageAnalysisSuccessed`
+  - 參數: 無
+- **回傳事件**: `ImageAnalysisFailed`
+  - 參數:
+    - `error message`: string
 
-### 4. 聊天相關
+### 4. Testing
 #### 發送訊息
 - **方法名稱**: `SendMessage`
 - **參數**:
@@ -180,31 +210,6 @@
     - `user`: string
     - `message`: string
 
-## 事件回調
-
-### 客戶端接收事件
-1. `UserCreated`: 用戶建立成功
-2. `RoomCreated`: 房間建立成功
-3. `GameJoined`: 成功加入遊戲
-4. `GameStarted`: 遊戲開始
-5. `ReceiveMessage`: 接收新訊息
-6. `Error`: 錯誤訊息
-
-## 錯誤處理
-```javascript
-connection.onclose((error) => {
-    console.error("連接關閉: " + error);
-});
-
-connection.onreconnecting((error) => {
-    console.log("重新連接中...");
-});
-
-connection.onreconnected((connectionId) => {
-    console.log("重新連接成功");
-});
-```
-
 ## 注意事項
 1. 確保在連接前已經正確配置了 SignalR 服務
 2. 處理連接斷開和重連的情況
@@ -213,47 +218,4 @@ connection.onreconnected((connectionId) => {
 5. 考慮網路延遲和連接狀態
 6. 房間資料會在 Redis 中保存 2 小時
 7. 用戶資料會在 Redis 中保存 2 小時
-
-## 範例代碼
-```javascript
-// 完整的連接示例
-const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/gamehub")
-    .withAutomaticReconnect()
-    .build();
-
-// 註冊事件處理
-connection.on("UserCreated", (userId) => {
-    console.log("用戶建立成功: " + userId);
-});
-
-connection.on("RoomCreated", (roomId) => {
-    console.log("房間建立成功: " + roomId);
-});
-
-connection.on("GameJoined", (roomId, user) => {
-    console.log("加入遊戲成功: " + roomId);
-});
-
-connection.on("GameStarted", (roomId, room) => {
-    console.log("遊戲開始: " + roomId);
-});
-
-connection.on("ReceiveMessage", (user, message) => {
-    console.log(user + ": " + message);
-});
-
-connection.on("Error", (error) => {
-    console.error("錯誤: " + error);
-});
-
-// 啟動連接
-connection.start()
-    .then(() => {
-        console.log("連接成功");
-        // 可以在這裡進行其他初始化操作
-    })
-    .catch((err) => {
-        console.error("連接失敗: " + err);
-    });
-```
+8. roundIndex 為 indexed-0

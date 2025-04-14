@@ -76,6 +76,26 @@
 4. 使用 Visual Studio 打開專案
 5. 執行專案
 
+## Redis cmd
+
+```bash
+KEYS *                         # 列出所有 keys（不建議在生產環境使用）
+KEYS user:*                    # 篩選 keys（例如以 user: 開頭的 key）
+DEL mykey                      # 刪除 key
+```
+
+```bash
+SET mykey "hello"              # 設定值
+GET mykey                      # 取得值
+```
+
+```bash
+FLUSHDB                       # 清除目前資料庫所有資料
+FLUSHALL                      # 清除所有資料庫
+DBSIZE                        # 當前資料庫 key 數量
+INFO                          # 顯示伺服器資訊
+```
+
 ## 設定
 
 請確保在 `appsettings.json` 中正確配置 Redis 連線字串：
