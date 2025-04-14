@@ -9,7 +9,10 @@ var redisConnection = builder.Configuration.GetConnectionString("RedisConnection
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnection));
 
 // Add services to the container. (SignalR)
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 1024 * 1024 * 5; // 5MB
+});
 
 builder.Services.AddControllers();
 
