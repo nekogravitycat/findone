@@ -33,7 +33,6 @@ public class RoomService
             Targets = targets.Select((t, i) => new RoomTarget
             {
                 RoomId = roomId,
-                RoundIndex = i + 1,
                 TargetName = t,
                 Room = null!
             }).ToList(),

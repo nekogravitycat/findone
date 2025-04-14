@@ -26,7 +26,6 @@
         public int Id { get; set; }
         public required string RoomId { get; set; }
         public required Room Room { get; set; }
-        public int RoundIndex { get; set; }
         public required string TargetName { get; set; }
     }
 }

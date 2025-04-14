@@ -7,7 +7,6 @@ namespace server.Services
     {
         private readonly GoogleAIService _googleAIService;
         private readonly RoomService _roomService;
-        private readonly string[] _imageObjects = { "glasses", "ball", "book", "elephant", "bottle" };
         
         public ImageService(IConfiguration configuration, RoomService roomService)
         {
@@ -15,7 +14,7 @@ namespace server.Services
             _roomService = roomService;
         }
 
-        public async Task<ImageResponse?> AnalyzeImage(string base64Image)
+        public async Task<ImageResponse?> AnalyzeImage(string base64Image, string target)
         {
             string fixedImage = ImageHelper.FixBase64String(base64Image);
             string mimeType = ImageHelper.DetectMimeType(fixedImage);
@@ -23,26 +22,9 @@ namespace server.Services
             if (string.IsNullOrEmpty(mimeType))
                 throw new FormatException("無法辨識的影像格式");
 
-            var clientRequest = $"Analyze the given image and identify all objects within it. Focus specifically on the following objects: {string.Join(", ", _imageObjects)}\r\n";
-            return await _googleAIService.AnalyzeImage(fixedImage, mimeType, clientRequest);
-        }
-
-        public async Task<float?> isImageCorrect(ImageResponse obj, string roomId, string userId, int roundIndex)
-        {
-            // already check room is validate
-            Room room = (await _roomService.GetRoom(roomId))!;
-            string target = room.Targets[roundIndex].TargetName;
-            int i = 0;
-
-            foreach (string objectName in obj.Object)
-            {
-                if (objectName.ToLower() == target.ToLower())
-                    return float.Parse(obj.Confidence[i]);
-
-                i++;
-            }
-
-            return null;
+            var clientRequest = $"Prompt: \"{target}\"\r\n" +
+                $"Please analyze the image and determine if it matches the prompt.\r\n";
+            return await _googleAIService.AnalyzeImage(base64Image, mimeType, clientRequest);
         }
     }
 }

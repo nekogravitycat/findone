@@ -1,5 +1,8 @@
-﻿using Mscc.GenerativeAI;
+﻿using Azure;
+using Mscc.GenerativeAI;
 using server.Models;
+using System.Runtime.InteropServices;
+using System;
 using System.Text.Json;
 
 namespace server.Services
@@ -7,25 +10,31 @@ namespace server.Services
     public class GoogleAIService
     {
         private readonly string _apiKey;
-        private readonly string _systemInstruction = "You are a professional image analysis assistant. " +
-            "Analyze the given image and identify all the objects within it. " +
-            "Please list every detected object along with its confidence score in descending order of confidence. " +
-            "The confidence score should range between 0.00 and 1.00, rounded to two decimal places. " +
-            "Include all objects even if their confidence is lower, as long as they are detected.\r\n";
+        private readonly string _systemInstruction =
+            "You are an image recognition judge in a fun multiplayer game. " +
+            "Each round, players submit images to match quirky prompts." +
+            "Your task is to:\r\n" +
+            "1. Evaluate whether the image matches the prompt.\r\n" +
+            "2. Respond with:\r\n" +
+            "   - A boolean indicating if the image matches the prompt(`true` or `false`)\r\n" +
+            "   - A short, playful zh-tw comment(e.g., “恨帥潮” or “能拍出這張圖，也是挺有生活的”)\r\n" +
+            "\r\n" +
+            "Be lighthearted but clear." +
+            "Responses should be fun and understandable by players." +
+            "Avoid offensive or overly negative language.\r\n";
 
         private readonly string _responseSchema = @"
         {
-            ""type"": ""object"",
-            ""properties"": {
-                ""Object"": { 
-                ""type"": ""array"", 
-                ""items"": { ""type"": ""string"" } 
+          ""type"": ""object"",
+          ""properties"": {
+            ""Match"": {
+              ""type"": ""boolean""
             },
-            ""Confidence"": { 
-                ""type"": ""array"", 
-                ""items"": { ""type"": ""string"" } }
-            },
-            ""required"": [""Object"", ""Confidence""]
+            ""Comment"": {
+              ""type"": ""string""
+            }
+          },
+          ""required"": [""Match"", ""Comment""]
         }";
 
         public GoogleAIService(IConfiguration configuration)

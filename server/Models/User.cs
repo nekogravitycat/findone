@@ -12,9 +12,10 @@
     public class UserScore
     {
         public Guid Id { get; set; } = Guid.NewGuid();
+        public DateTime DateTime { get; set; } = DateTime.UtcNow;
         public Guid UserId { get; set; }
         public required User User { get; init; }
         public int RoundIndex { get; set; }
-        public double Score { get; set; }
+        public required string Comment { get; set; }
     }
 }

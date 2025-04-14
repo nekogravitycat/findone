@@ -71,7 +71,7 @@ namespace server.Services
             await clients.Group(roomId).SendAsync("GameStarted", roomId, room);
         }
 
-        public async Task HandleSubmitImage(IClientProxy caller, string roomId, string userId, int roundIndex, string base64Image)
+        public async Task HandleSubmitImage(IClientProxy caller, string userId, int roundIndex, string base64Image)
         {
             try
             {
@@ -79,13 +79,17 @@ namespace server.Services
                 User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
 
                 // validate room
-                Room room = await _roomService.GetRoom(roomId) ?? throw new Exception("Room not found");
+                Room room = await _roomService.GetRoom(user.RoomId) ?? throw new Exception("Room not found");
+
+                // target of current round
+                string target = room.Targets[roundIndex].TargetName;
 
                 // analyze
-                ImageResponse result = await _imageService.AnalyzeImage(base64Image) ?? throw new Exception("Image analysis failed");
+                ImageResponse result = await _imageService.AnalyzeImage(base64Image, target) ?? throw new Exception("Image analysis failed");
 
                 // check if image is correct
-                float confidence = await _imageService.isImageCorrect(result, roomId, userId, roundIndex) ?? throw new Exception("Image is not correct");
+                if(result.Match == false)
+                    throw new Exception("Image does not match the target");
 
                 // update user
                 UserScore user_score = new UserScore
@@ -93,7 +97,7 @@ namespace server.Services
                     UserId = Guid.Parse(userId),
                     User = user,
                     RoundIndex = roundIndex,
-                    Score = confidence
+                    Comment = result.Comment,
                 };
                 await _userService.AddScore(user_score);
 

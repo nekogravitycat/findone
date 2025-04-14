@@ -7,7 +7,7 @@
 
     public class ImageResponse
     {
-        public required string[] Object { get; set; }
-        public required string[] Confidence { get; set; }
+        public required Boolean Match { get; set; }
+        public required string Comment { get; set; }
     }
 }
