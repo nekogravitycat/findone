@@ -1,8 +1,5 @@
-﻿using Azure;
-using Mscc.GenerativeAI;
+﻿using Mscc.GenerativeAI;
 using server.Models;
-using System.Runtime.InteropServices;
-using System;
 using System.Text.Json;
 
 namespace server.Services
