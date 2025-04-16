@@ -48,8 +48,13 @@ namespace server.Services
         {
             User user = await _userService.CreateUser(userName);
             Room room = await _roomService.CreateRoom(user, round, timeLimit);
+
+            user.RoomId = room.RoomId;
+
+            await _userService.UpdateUser(user);
+
             await groups.AddToGroupAsync(context.ConnectionId, room.RoomId);
-            await caller.SendAsync("RoomCreated", room.RoomId);
+            await caller.SendAsync("RoomCreated", room.RoomId, user.UserId);
         }
 
         public async Task HandleJoinRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string roomId, string userName)
@@ -75,6 +80,8 @@ namespace server.Services
         {
             try
             {
+                DateTime currnetTime = DateTime.Now;
+
                 // validate user
                 User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
 
@@ -95,11 +102,13 @@ namespace server.Services
                 UserScore user_score = new UserScore
                 {
                     UserId = Guid.Parse(userId),
-                    User = user,
                     RoundIndex = roundIndex,
                     Comment = result.Comment,
+                    DateTime = currnetTime,
+                    Base64Image = base64Image
                 };
                 await _userService.AddScore(user_score);
+                await _roomService.AddSubmit(userId, room.RoomId, currnetTime, roundIndex);
 
                 await caller.SendAsync("ImageAnalysisSuccessed");
             }

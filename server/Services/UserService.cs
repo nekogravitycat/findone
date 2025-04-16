@@ -18,16 +18,10 @@ public class UserService
         await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
         return user;
     }
+
     public async Task<User> CreateUser(string userName, string roomId)
     {
         User user = new User { UserName = userName, RoomId = roomId};
-        IDatabase db = _redis.GetDatabase();
-        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
-        return user;
-    }
-
-    public async Task<User> UpdateUser(User user)
-    {
         IDatabase db = _redis.GetDatabase();
         await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
         return user;
@@ -45,10 +39,23 @@ public class UserService
         return user;
     }
 
-    public async Task<User?> GetUser(string userId)
+    public async Task<User> GetUser(string userId)
     {
         IDatabase db = _redis.GetDatabase();
         RedisValue json = await db.StringGetAsync($"user:{userId}");
-        return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<User>(json!);
+
+        if(string.IsNullOrEmpty(json))
+        {
+            throw new Exception($"User not found: {userId}");
+        }
+
+        return JsonSerializer.Deserialize<User>(json!)!;
+    }
+
+    public async Task<User> UpdateUser(User user)
+    {
+        IDatabase db = _redis.GetDatabase();
+        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        return user;
     }
 }

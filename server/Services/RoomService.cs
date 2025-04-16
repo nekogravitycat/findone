@@ -12,13 +12,6 @@ public class RoomService
         _redis = redis;
     }
 
-    public async Task<Room?> GetRoom(string roomId)
-    {
-        IDatabase db = _redis.GetDatabase(); 
-        RedisValue json = await db.StringGetAsync($"room:{roomId}");
-        return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<Room>(json!);
-    }
-
     public async Task<Room> CreateRoom(User hostUser, int round, int timeLimit)
     {
         string roomId = IdGenerator.GenerateRoomId();
@@ -34,14 +27,12 @@ public class RoomService
             {
                 RoomId = roomId,
                 TargetName = t,
-                Room = null!
             }).ToList(),
             UserIds = new HashSet<Guid> { hostUser.UserId },
             Status = RoomStatus.Waiting
         };
 
-        IDatabase db = _redis.GetDatabase();
-        await db.StringSetAsync($"room:{roomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
+        await updateRoom(room);
         return room;
     }
 
@@ -63,6 +54,32 @@ public class RoomService
         Room room = JsonSerializer.Deserialize<Room>(json!) ?? throw new Exception("Room not found");
         room.Status = RoomStatus.InProgress;
         await db.StringSetAsync($"room:{roomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
+        return room;
+    }
+
+    public async Task<Room> AddSubmit(string userId, string roomId, DateTime datetime, int roundIndex)
+    {
+        Room room = await GetRoom(roomId);
+
+        room.RoomSubmits[roundIndex].Append(new RoomSubmit { DateTime = datetime, UserId = Guid.Parse(userId) });
+
+        await updateRoom(room);
+        return room;
+    }
+    public async Task<Room> GetRoom(string roomId)
+    {
+        IDatabase db = _redis.GetDatabase();
+        RedisValue json = await db.StringGetAsync($"room:{roomId}");
+
+        if (string.IsNullOrEmpty(json))
+            throw new Exception($"Room not found: {roomId}");
+
+        return JsonSerializer.Deserialize<Room>(json!)!;
+    }
+    public async Task<Room?> updateRoom(Room room)
+    {
+        IDatabase db = _redis.GetDatabase();
+        await db.StringSetAsync($"room:{room.RoomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
         return room;
     }
 }

@@ -12,10 +12,10 @@
     public class UserScore
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public DateTime DateTime { get; set; } = DateTime.UtcNow;
+        public required DateTime DateTime { get; set; }
         public Guid UserId { get; set; }
-        public required User User { get; init; }
         public int RoundIndex { get; set; }
+        public required string Base64Image { get; set; }
         public required string Comment { get; set; }
     }
 }
