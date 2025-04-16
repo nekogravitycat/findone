@@ -98,19 +98,6 @@
 }
 ```
 
-#### 8. 發送訊息
-```json
-{
-    "type": 1,
-    "invocationId": "7",
-    "target": "SendMessage",
-    "arguments": [
-        "userName",
-        "message"
-    ]
-}
-```
-
 ### 訊息類型說明
 - `type: 1` - 調用方法
 - `type: 2` - 串流項目
@@ -166,6 +153,7 @@
   - `timeLimit`: number (時間限制，秒)
 - **回傳事件**: `RoomCreated`
   - 參數: `roomId`: string
+  - 參數: `userId`: string
 
 #### 加入房間
 - **方法名稱**: `GameJoin`
