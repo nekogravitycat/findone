@@ -18,15 +18,22 @@
         // target items for identification
         public List<RoomTarget> Targets { get; set; } = new List<RoomTarget>();
         // relation to users
-        public List<User> Users { get; set; } = new List<User>();
+        public HashSet<Guid> UserIds { get; set; } = new HashSet<Guid>();
+        // default : 5 rounds
+        public List<RoomSubmit[]> RoomSubmits { get; set; } =
+            Enumerable.Range(0, 5).Select(_ => new RoomSubmit[0]).ToList();
     }
 
     public class RoomTarget
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public required string RoomId { get; set; }
-        public required Room Room { get; set; }
-        public int RoundIndex { get; set; }
         public required string TargetName { get; set; }
+    }
+
+    public class RoomSubmit
+    {
+        public required DateTime DateTime { get; set; }
+        public required Guid UserId { get; set; }
     }
 }
