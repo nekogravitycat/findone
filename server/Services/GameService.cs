@@ -86,10 +86,8 @@ namespace server.Services
                 if (room.Status != RoomStatus.Waiting)
                     throw new Exception("Game already started");
 
-                // update room status
-                room.Status = RoomStatus.InProgress;
-
-                await _roomService.updateRoom(room);
+                // update room status & start game
+                await _roomService.StartGame(roomId);
 
                 await clients.Group(roomId).SendAsync("GameStarted");
             }
@@ -130,7 +128,7 @@ namespace server.Services
                 // update room endTime
                 room.EndTime = endTime;
                 room.CurrentRound = roundIndex;
-                await _roomService.updateRoom(room);
+                await _roomService.UpdateRoom(room);
 
                 // create round object
                 Round round = new Round { 
