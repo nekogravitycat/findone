@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Humanizer;
+using Microsoft.AspNetCore.SignalR;
 using server.Models;
-using System.Diagnostics;
 
 namespace server.Services
 {
@@ -96,6 +96,46 @@ namespace server.Services
             catch (Exception ex)
             {
                 await clients.Caller.SendAsync("GameStartFailed", ex.Message);
+            }
+        }
+
+        public async Task HandleGetRound(IHubCallerClients clients, string roomId, string userId, int roundIndex)
+        {
+            try
+            {
+                // validate room
+                Room room = await _roomService.GetRoom(roomId);
+
+                // validate user
+                User user = await _userService.GetUser(userId);
+
+                if (room.HostUserId != user.UserId)
+                    throw new Exception("Only the host can start the game");
+
+                // validate round index
+                if (roundIndex < 0 || roundIndex >= room.Round)
+                    throw new Exception("Invalid round index");
+
+                // get round info
+                RoomTarget target = room.Targets[roundIndex];
+                int delayBuffer = 1;
+                DateTime endTime = DateTime.Now + (room.TimeLimit + delayBuffer).Seconds();
+
+                // update room endTime
+                room.EndTime = endTime;
+                await _roomService.updateRoom(room);
+
+                // create round object
+                Round round = new Round { 
+                    TargetName = target.TargetName,
+                    EndTime = endTime
+                };
+
+                await clients.Group(roomId).SendAsync("RoundInfo", round);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("RoundInfoFailed", ex.Message);
             }
         }
 
