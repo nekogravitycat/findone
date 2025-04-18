@@ -13,6 +13,7 @@
         public Guid HostUserId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int Round { get; set; } = 5; // default: 5 rounds
+        public int? CurrentRound { get; set; } = null;
         public int TimeLimit { get; set; } = 30; // default: 30 seconds
         public DateTime? EndTime { get; set; } = null;
         public RoomStatus Status { get; set; } = RoomStatus.Waiting;

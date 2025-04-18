@@ -116,6 +116,12 @@ namespace server.Services
                 if (roundIndex < 0 || roundIndex >= room.Round)
                     throw new Exception("Invalid round index");
 
+                // ensure round not reapeated
+                if (roundIndex < room.CurrentRound)
+                    throw new Exception("Round already ended!");
+
+                // TODO: add check for current round already ended
+
                 // get round info
                 RoomTarget target = room.Targets[roundIndex];
                 int delayBuffer = 1;
@@ -123,6 +129,7 @@ namespace server.Services
 
                 // update room endTime
                 room.EndTime = endTime;
+                room.CurrentRound = roundIndex;
                 await _roomService.updateRoom(room);
 
                 // create round object
@@ -146,10 +153,19 @@ namespace server.Services
                 DateTime currnetTime = DateTime.Now;
 
                 // validate user
-                User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
+                User user = await _userService.GetUser(userId);
 
                 // validate room
-                Room room = await _roomService.GetRoom(user.RoomId) ?? throw new Exception("Room not found");
+                Room room = await _roomService.GetRoom(user.RoomId);
+
+                if (room.Status != RoomStatus.InProgress)
+                    throw new Exception("Game not started yet or already ended!");
+
+                if (room.EndTime < currnetTime)
+                    throw new Exception("Round already closed!");
+
+                if (room.CurrentRound != roundIndex)
+                    throw new Exception("Invalid round index!");
 
                 // target of current round
                 string target = room.Targets[roundIndex].TargetName;
@@ -158,7 +174,7 @@ namespace server.Services
                 ImageResponse result = await _imageService.AnalyzeImage(base64Image, target) ?? throw new Exception("Image analysis failed");
 
                 // check if image is correct
-                if(result.Match == false)
+                if (result.Match == false)
                     throw new Exception("Image does not match the target");
 
                 // update user
