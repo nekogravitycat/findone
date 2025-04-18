@@ -1,0 +1,61 @@
+﻿using server.Models;
+using System.Text.Json;
+using StackExchange.Redis;
+using Microsoft.AspNetCore.Identity;
+
+public class UserService
+{
+    private readonly IConnectionMultiplexer _redis;
+
+    public UserService(IConnectionMultiplexer redis)
+    {
+        _redis = redis;
+    }
+    public async Task<User> CreateUser(string userName)
+    {
+        User user = new User { UserName = userName };
+        IDatabase db = _redis.GetDatabase();
+        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        return user;
+    }
+
+    public async Task<User> CreateUser(string userName, string roomId)
+    {
+        User user = new User { UserName = userName, RoomId = roomId};
+        IDatabase db = _redis.GetDatabase();
+        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        return user;
+    }
+
+    public async Task<User> AddScore(UserScore userScore)
+    {
+        IDatabase db = _redis.GetDatabase();
+        RedisValue json = await db.StringGetAsync($"user:{userScore.UserId}");
+        User user = (string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<User>(json!)) ?? throw new Exception("User not found");
+        
+        user.Scores.Add(userScore);
+
+        user = await UpdateUser(user);
+        return user;
+    }
+
+    public async Task<User> GetUser(string userId)
+    {
+        IDatabase db = _redis.GetDatabase();
+        RedisValue json = await db.StringGetAsync($"user:{userId}");
+
+        if(string.IsNullOrEmpty(json))
+        {
+            throw new Exception($"User not found: {userId}");
+        }
+
+        return JsonSerializer.Deserialize<User>(json!)!;
+    }
+
+    public async Task<User> UpdateUser(User user)
+    {
+        IDatabase db = _redis.GetDatabase();
+        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        return user;
+    }
+}
