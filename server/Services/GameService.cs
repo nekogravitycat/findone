@@ -70,10 +70,33 @@ namespace server.Services
             await caller.SendAsync("GameJoined", roomId, user);
         }
 
-        public async Task HandleStartGame(IHubCallerClients clients, string roomId)
+        public async Task HandleStartGame(IHubCallerClients clients, string roomId, string userId)
         {
-            Room room = await _roomService.StartGame(roomId);
-            await clients.Group(roomId).SendAsync("GameStarted", roomId, room);
+            try
+            {
+                // validate room
+                Room room = await _roomService.GetRoom(roomId);
+
+                // validate user
+                User user = await _userService.GetUser(userId);
+
+                if (room.HostUserId != user.UserId)
+                    throw new Exception("Only the host can start the game");
+
+                if (room.Status != RoomStatus.Waiting)
+                    throw new Exception("Game already started");
+
+                // update room status
+                room.Status = RoomStatus.InProgress;
+
+                await _roomService.updateRoom(room);
+
+                await clients.Group(roomId).SendAsync("GameStarted");
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("GameStartFailed", ex.Message);
+            }
         }
 
         public async Task HandleSubmitImage(IClientProxy caller, string userId, int roundIndex, string base64Image)
@@ -107,7 +130,11 @@ namespace server.Services
                     DateTime = currnetTime,
                     Base64Image = base64Image
                 };
+
+                // add score record to user
                 await _userService.AddScore(user_score);
+
+                // add submit record to room
                 await _roomService.AddSubmit(userId, room.RoomId, currnetTime, roundIndex);
 
                 await caller.SendAsync("ImageAnalysisSuccessed");
