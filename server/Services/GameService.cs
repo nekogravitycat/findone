@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Humanizer;
+using Microsoft.AspNetCore.SignalR;
 using server.Models;
-using System.Diagnostics;
 
 namespace server.Services
 {
@@ -70,10 +70,78 @@ namespace server.Services
             await caller.SendAsync("GameJoined", roomId, user);
         }
 
-        public async Task HandleStartGame(IHubCallerClients clients, string roomId)
+        public async Task HandleStartGame(IHubCallerClients clients, string roomId, string userId)
         {
-            Room room = await _roomService.StartGame(roomId);
-            await clients.Group(roomId).SendAsync("GameStarted", roomId, room);
+            try
+            {
+                // validate room
+                Room room = await _roomService.GetRoom(roomId);
+
+                // validate user
+                User user = await _userService.GetUser(userId);
+
+                if (room.HostUserId != user.UserId)
+                    throw new Exception("Only the host can start the game");
+
+                if (room.Status != RoomStatus.Waiting)
+                    throw new Exception("Game already started");
+
+                // update room status & start game
+                await _roomService.StartGame(roomId);
+
+                await clients.Group(roomId).SendAsync("GameStarted");
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("GameStartFailed", ex.Message);
+            }
+        }
+
+        public async Task HandleGetRound(IHubCallerClients clients, string roomId, string userId, int roundIndex)
+        {
+            try
+            {
+                // validate room
+                Room room = await _roomService.GetRoom(roomId);
+
+                // validate user
+                User user = await _userService.GetUser(userId);
+
+                if (room.HostUserId != user.UserId)
+                    throw new Exception("Only the host can start the game");
+
+                // validate round index
+                if (roundIndex < 0 || roundIndex >= room.Round)
+                    throw new Exception("Invalid round index");
+
+                // ensure round not reapeated
+                if (roundIndex < room.CurrentRound)
+                    throw new Exception("Round already ended!");
+
+                // TODO: add check for current round already ended
+
+                // get round info
+                RoomTarget target = room.Targets[roundIndex];
+                int delayBuffer = 1;
+                DateTime endTime = DateTime.Now + (room.TimeLimit + delayBuffer).Seconds();
+
+                // update room endTime
+                room.EndTime = endTime;
+                room.CurrentRound = roundIndex;
+                await _roomService.UpdateRoom(room);
+
+                // create round object
+                Round round = new Round { 
+                    TargetName = target.TargetName,
+                    EndTime = endTime
+                };
+
+                await clients.Group(roomId).SendAsync("RoundInfo", round);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("RoundInfoFailed", ex.Message);
+            }
         }
 
         public async Task HandleSubmitImage(IClientProxy caller, string userId, int roundIndex, string base64Image)
@@ -83,10 +151,19 @@ namespace server.Services
                 DateTime currnetTime = DateTime.Now;
 
                 // validate user
-                User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
+                User user = await _userService.GetUser(userId);
 
                 // validate room
-                Room room = await _roomService.GetRoom(user.RoomId) ?? throw new Exception("Room not found");
+                Room room = await _roomService.GetRoom(user.RoomId);
+
+                if (room.Status != RoomStatus.InProgress)
+                    throw new Exception("Game not started yet or already ended!");
+
+                if (room.EndTime < currnetTime)
+                    throw new Exception("Round already closed!");
+
+                if (room.CurrentRound != roundIndex)
+                    throw new Exception("Invalid round index!");
 
                 // target of current round
                 string target = room.Targets[roundIndex].TargetName;
@@ -95,7 +172,7 @@ namespace server.Services
                 ImageResponse result = await _imageService.AnalyzeImage(base64Image, target) ?? throw new Exception("Image analysis failed");
 
                 // check if image is correct
-                if(result.Match == false)
+                if (result.Match == false)
                     throw new Exception("Image does not match the target");
 
                 // update user
@@ -107,7 +184,11 @@ namespace server.Services
                     DateTime = currnetTime,
                     Base64Image = base64Image
                 };
+
+                // add score record to user
                 await _userService.AddScore(user_score);
+
+                // add submit record to room
                 await _roomService.AddSubmit(userId, room.RoomId, currnetTime, roundIndex);
 
                 await caller.SendAsync("ImageAnalysisSuccessed");

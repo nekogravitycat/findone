@@ -27,8 +27,11 @@ namespace server.Hubs
         public async Task GameJoin(string roomId, string userName)
             => await _gameService.HandleJoinRoom(Context, Clients.Caller, Groups, roomId, userName);
 
-        public async Task GameStart(string roomId)
-            => await _gameService.HandleStartGame(Clients, roomId);
+        public async Task GameStart(string roomId, string userId)
+            => await _gameService.HandleStartGame(Clients, roomId, userId);
+
+        public async Task GetRound(string roomId, string userId, int roundIndex)
+            => await _gameService.HandleGetRound(Clients, roomId, userId, roundIndex);
 
         public async Task SubmitImage(string userId, int roundIndex, string base64Image)
             => await _gameService.HandleSubmitImage(Clients.Caller, userId, roundIndex, base64Image);

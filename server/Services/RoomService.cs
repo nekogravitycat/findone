@@ -32,7 +32,7 @@ public class RoomService
             Status = RoomStatus.Waiting
         };
 
-        await updateRoom(room);
+        await UpdateRoom(room);
         return room;
     }
 
@@ -42,18 +42,28 @@ public class RoomService
 
         var json = await db.StringGetAsync($"room:{roomId}");
         var room = JsonSerializer.Deserialize<Room>(json!) ?? throw new Exception("Room not found");
+
+        // ensure room is not in progress or finished
+        if (room.Status == RoomStatus.InProgress)
+            throw new Exception("Room is already in progress");
+
+        if (room.Status == RoomStatus.Finished)
+            throw new Exception("Room is already finished");
+
         room.UserIds.Add(user.UserId);
-        await db.StringSetAsync($"room:{roomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
+
+        await UpdateRoom(room);
+
         return room;
     }
 
     public async Task<Room> StartGame(string roomId)
     {
-        IDatabase db = _redis.GetDatabase();
-        RedisValue json = await db.StringGetAsync($"room:{roomId}");
-        Room room = JsonSerializer.Deserialize<Room>(json!) ?? throw new Exception("Room not found");
+        Room room = await GetRoom(roomId);
+
         room.Status = RoomStatus.InProgress;
-        await db.StringSetAsync($"room:{roomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
+        await UpdateRoom(room);
+
         return room;
     }
 
@@ -63,7 +73,7 @@ public class RoomService
 
         room.RoomSubmits[roundIndex].Append(new RoomSubmit { DateTime = datetime, UserId = Guid.Parse(userId) });
 
-        await updateRoom(room);
+        await UpdateRoom(room);
         return room;
     }
     public async Task<Room> GetRoom(string roomId)
@@ -76,7 +86,7 @@ public class RoomService
 
         return JsonSerializer.Deserialize<Room>(json!)!;
     }
-    public async Task<Room?> updateRoom(Room room)
+    public async Task<Room?> UpdateRoom(Room room)
     {
         IDatabase db = _redis.GetDatabase();
         await db.StringSetAsync($"room:{room.RoomId}", JsonSerializer.Serialize(room), TimeSpan.FromHours(2));
