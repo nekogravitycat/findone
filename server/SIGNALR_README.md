@@ -84,7 +84,7 @@
     - `error message`: string
 
 ### 3. 遊戲相關
-#### 取得該輪資訊
+#### 取得該輪題目和結束時間資訊
 
 > 僅需由 host 發出訊息
 
@@ -96,6 +96,17 @@
 - **回傳事件**: `RoundInfo`
   - 參數: round: Round
 - **回傳事件**: `RoundInfoFailed`
+  - 參數:
+    - `error message`: string
+
+#### 取得該輪成果
+- **方法名稱**: `GetRank`
+- **參數**:
+  - `roomId`: string
+  - `userId`: string
+- **回傳事件**: `RankInfo`
+  - 參數: scores: List<Score>
+- **回傳事件**: `RankFailed`
   - 參數:
     - `error message`: string
 
