@@ -21,7 +21,10 @@ public class UserService
 
     public async Task<User> CreateUser(string userName, string roomId)
     {
-        User user = new User { UserName = userName, RoomId = roomId};
+        User user = new User { 
+            UserName = userName, 
+            RoomId = roomId
+        };
         IDatabase db = _redis.GetDatabase();
         await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
         return user;
@@ -50,6 +53,17 @@ public class UserService
         }
 
         return JsonSerializer.Deserialize<User>(json!)!;
+    }
+
+    public async Task<User[]> GetUsers(List<Guid> userIds)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var tasks = userIds.Select(userId => db.StringGetAsync($"user:{userId}"));
+        var results = await Task.WhenAll(tasks);
+        return results
+            .Where(json => !string.IsNullOrEmpty(json))
+            .Select(json => JsonSerializer.Deserialize<User>(json!)!)
+            .ToArray();
     }
 
     public async Task<User> UpdateUser(User user)

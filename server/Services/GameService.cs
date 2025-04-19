@@ -110,6 +110,9 @@ namespace server.Services
                 if (room.HostUserId != user.UserId)
                     throw new Exception("Only the host can start the game");
 
+                if (room.Status != RoomStatus.InProgress)
+                    throw new Exception("Game isn't started or already ended!");
+
                 // validate round index
                 if (roundIndex < 0 || roundIndex >= room.Round)
                     throw new Exception("Invalid round index");
@@ -123,7 +126,7 @@ namespace server.Services
                 // get round info
                 RoomTarget target = room.Targets[roundIndex];
                 int delayBuffer = 1;
-                DateTime endTime = DateTime.Now + (room.TimeLimit + delayBuffer).Seconds();
+                DateTime endTime = DateTime.UtcNow + (room.TimeLimit + delayBuffer).Seconds();
 
                 // update room endTime
                 room.EndTime = endTime;
@@ -131,7 +134,8 @@ namespace server.Services
                 await _roomService.UpdateRoom(room);
 
                 // create round object
-                Round round = new Round { 
+                Round round = new Round
+                {
                     TargetName = target.TargetName,
                     EndTime = endTime
                 };
@@ -148,7 +152,7 @@ namespace server.Services
         {
             try
             {
-                DateTime currnetTime = DateTime.Now;
+                DateTime currentTime = DateTime.UtcNow;
 
                 // validate user
                 User user = await _userService.GetUser(userId);
@@ -159,11 +163,15 @@ namespace server.Services
                 if (room.Status != RoomStatus.InProgress)
                     throw new Exception("Game not started yet or already ended!");
 
-                if (room.EndTime < currnetTime)
+                if (room.EndTime < currentTime)
                     throw new Exception("Round already closed!");
 
                 if (room.CurrentRound != roundIndex)
                     throw new Exception("Invalid round index!");
+
+                bool alreadySubmitted = user.Scores.Any(s => s.RoundIndex == roundIndex);
+                if (alreadySubmitted)
+                    throw new Exception("Image already submitted for this round!");
 
                 // target of current round
                 string target = room.Targets[roundIndex].TargetName;
@@ -181,7 +189,7 @@ namespace server.Services
                     UserId = Guid.Parse(userId),
                     RoundIndex = roundIndex,
                     Comment = result.Comment,
-                    DateTime = currnetTime,
+                    DateTime = currentTime,
                     Base64Image = base64Image
                 };
 
@@ -189,13 +197,67 @@ namespace server.Services
                 await _userService.AddScore(user_score);
 
                 // add submit record to room
-                await _roomService.AddSubmit(userId, room.RoomId, currnetTime, roundIndex);
+                await _roomService.AddSubmit(userId, room.RoomId, currentTime, roundIndex);
 
                 await caller.SendAsync("ImageAnalysisSuccessed");
             }
             catch (Exception ex)
             {
                 await caller.SendAsync("ImageAnalysisFailed", ex.Message);
+            }
+        }
+
+        public async Task HandleGetRank(IHubCallerClients clients, string roomId, string userId)
+        {
+            try
+            {
+                // validate room and user
+                Room room = await _roomService.GetRoom(roomId);
+                User user = await _userService.GetUser(userId);
+
+                if (room.HostUserId != user.UserId)
+                    throw new Exception("Only the host can start the game");
+
+                int currentRound = room.CurrentRound ?? throw new Exception("Round not started yet!");
+                DateTime roundEndTime = room.EndTime ?? throw new Exception("Round not started yet!");
+
+                int timeLimitSeconds = room.TimeLimit;
+
+                // get round info & all of users
+                List<RoomSubmit> submits = room.RoomSubmits[currentRound];
+                User[] allUsers = await _userService.GetUsers(room.UserIds.ToList());
+
+                List<Score> scores = [];
+                int i = 0;
+
+                foreach (RoomSubmit submit in submits)
+                {
+                    User u = allUsers.FirstOrDefault(user => user.UserId == submit.UserId)
+                        ?? throw new Exception("找不到對應的使用者");
+
+                    double secondsUsed = (submit.DateTime - (roundEndTime.AddSeconds(-timeLimitSeconds))).TotalSeconds;
+                    double timeLeft = Math.Max(0, timeLimitSeconds - secondsUsed);
+                    double scoreValue = (timeLeft / timeLimitSeconds) * 100.0;
+
+                    var userScore = u.Scores.FirstOrDefault(s => s.RoundIndex == currentRound);
+
+                    scores.Add(new Score
+                    {
+                        UserId = u.UserId,
+                        UserName = u.UserName,
+                        ScoreValue = scoreValue,
+                        Base64Image = i < 3 && userScore != null ? userScore.Base64Image : "",
+                        Comment = i < 3 && userScore != null ? userScore.Comment : ""
+                    });
+
+                    i++;
+                }
+
+                await clients.Group(roomId).SendAsync("RankInfo", scores);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("RankFailed", ex.Message);
             }
         }
     }
