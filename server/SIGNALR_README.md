@@ -114,7 +114,6 @@
 - **方法名稱**: `SubmitImage`
 - **參數**:
   - `userId`: string
-  - `roundIndex`: number
   - `base64Image`: string
 - **回傳事件**: `ImageAnalysisSuccessed`
   - 參數: 無
