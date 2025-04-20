@@ -150,7 +150,7 @@ namespace server.Services
             }
         }
 
-        public async Task HandleSubmitImage(IClientProxy caller, string userId, int roundIndex, string base64Image)
+        public async Task HandleSubmitImage(IClientProxy caller, string userId, string base64Image)
         {
             try
             {
@@ -168,15 +168,16 @@ namespace server.Services
                 if (room.EndTime < currentTime)
                     throw new Exception("Round already closed!");
 
-                if (room.CurrentRound != roundIndex)
-                    throw new Exception("Invalid round index!");
+                if (room.CurrentRound == null)
+                    throw new Exception("Round not started yet!");
 
-                bool alreadySubmitted = user.Scores.Any(s => s.RoundIndex == roundIndex);
+                // current round & target of current round
+                int currentRound = room.CurrentRound.Value;
+                string target = room.Targets[currentRound].TargetName;
+
+                bool alreadySubmitted = user.Scores.Any(s => s.RoundIndex == currentRound);
                 if (alreadySubmitted)
                     throw new Exception("Image already submitted for this round!");
-
-                // target of current round
-                string target = room.Targets[roundIndex].TargetName;
 
                 // analyze
                 ImageResponse result = await _imageService.AnalyzeImage(base64Image, target) ?? throw new Exception("Image analysis failed");
@@ -189,7 +190,7 @@ namespace server.Services
                 UserScore user_score = new UserScore
                 {
                     UserId = Guid.Parse(userId),
-                    RoundIndex = roundIndex,
+                    RoundIndex = currentRound,
                     Comment = result.Comment,
                     DateTime = currentTime,
                     Base64Image = base64Image,
@@ -200,7 +201,7 @@ namespace server.Services
                 await _userService.AddScore(user_score);
 
                 // add submit record to room
-                await _roomService.AddSubmit(userId, room.RoomId, currentTime, roundIndex);
+                await _roomService.AddSubmit(userId, room.RoomId, currentTime, currentRound);
 
                 await caller.SendAsync("ImageAnalysisSuccessed");
             }
