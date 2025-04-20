@@ -14,8 +14,7 @@ public class UserService
     public async Task<User> CreateUser(string userName)
     {
         User user = new User { UserName = userName };
-        IDatabase db = _redis.GetDatabase();
-        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        await UpdateUser(user);
         return user;
     }
 
@@ -25,8 +24,7 @@ public class UserService
             UserName = userName, 
             RoomId = roomId
         };
-        IDatabase db = _redis.GetDatabase();
-        await db.StringSetAsync($"user:{user.UserId}", JsonSerializer.Serialize(user), TimeSpan.FromHours(2));
+        await UpdateUser(user);
         return user;
     }
 
