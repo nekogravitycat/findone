@@ -17,5 +17,6 @@
         public int RoundIndex { get; set; }
         public required string Base64Image { get; set; }
         public required string Comment { get; set; }
+        public double Score { get; set; }
     }
 }

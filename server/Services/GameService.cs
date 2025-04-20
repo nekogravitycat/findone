@@ -10,12 +10,14 @@ namespace server.Services
         private readonly RoomService _roomService;
         private readonly UserService _userService;
         private readonly ImageService _imageService;
+        private readonly ScoreService _scoreService;
 
-        public GameService(RoomService roomService, UserService userService, ImageService imageService)
+        public GameService(RoomService roomService, UserService userService, ImageService imageService, ScoreService scoreService)
         {
             _roomService = roomService;
             _userService = userService;
             _imageService = imageService;
+            _scoreService = scoreService;
         }
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
@@ -190,7 +192,8 @@ namespace server.Services
                     RoundIndex = roundIndex,
                     Comment = result.Comment,
                     DateTime = currentTime,
-                    Base64Image = base64Image
+                    Base64Image = base64Image,
+                    Score = _scoreService.CaclulateScore(room, currentTime)
                 };
 
                 // add score record to user
@@ -235,11 +238,9 @@ namespace server.Services
                     User u = allUsers.FirstOrDefault(user => user.UserId == submit.UserId)
                         ?? throw new Exception("找不到對應的使用者");
 
-                    double secondsUsed = (submit.DateTime - (roundEndTime.AddSeconds(-timeLimitSeconds))).TotalSeconds;
-                    double timeLeft = Math.Max(0, timeLimitSeconds - secondsUsed);
-                    double scoreValue = (timeLeft / timeLimitSeconds) * 100.0;
-
-                    var userScore = u.Scores.FirstOrDefault(s => s.RoundIndex == currentRound);
+                    // get user score
+                    UserScore userScore = u.Scores.FirstOrDefault(s => s.RoundIndex == currentRound) ?? throw new Exception("找不到對應的分數");
+                    double scoreValue = userScore.Score;
 
                     scores.Add(new Score
                     {
