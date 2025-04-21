@@ -1,6 +1,7 @@
 ﻿using server.Models;
 using server.Utils;
 using StackExchange.Redis;
+using System.IO;
 using System.Text.Json;
 
 public class RoomService
@@ -14,8 +15,13 @@ public class RoomService
 
     public async Task<Room> CreateRoom(User hostUser, int round, int timeLimit)
     {
+        Random random = new Random();
         string roomId = IdGenerator.GenerateRoomId();
-        string[] targets = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
+        List<string> allTargets = File.ReadAllLines("Data/targets.txt")
+                             .Where(line => !string.IsNullOrWhiteSpace(line))
+                             .ToList() ?? throw new Exception("找不到檔案! 請檢查錯誤");
+
+        List<string> targets = allTargets.OrderBy(_ => random.Next()).Take(round).ToList();
 
         Room room = new Room
         {
