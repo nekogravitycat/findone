@@ -241,19 +241,24 @@ namespace server.Services
 
                     // get user score
                     UserScore userScore = u.Scores.FirstOrDefault(s => s.RoundIndex == currentRound) ?? throw new Exception("找不到對應的分數");
-                    double scoreValue = userScore.Score;
+                    double totalRoundScore = u.Scores.Sum(s => s.Score);
+                    double currentRoundScore = userScore.Score;
 
                     scores.Add(new Score
                     {
                         UserId = u.UserId,
                         UserName = u.UserName,
-                        ScoreValue = scoreValue,
-                        Base64Image = i < 3 && userScore != null ? userScore.Base64Image : "",
-                        Comment = i < 3 && userScore != null ? userScore.Comment : ""
+                        TotalRoundScore = totalRoundScore,
+                        CurrentRoundScore = currentRoundScore,
+                        Base64Image = i < 3 ? userScore.Base64Image : "",
+                        Comment = i < 3 ? userScore.Comment : ""
                     });
 
                     i++;
                 }
+
+                // do decresing-order
+                scores.Sort((a, b) => b.TotalRoundScore.CompareTo(a.TotalRoundScore));
 
                 await clients.Group(roomId).SendAsync("RankInfo", scores);
             }
@@ -262,5 +267,6 @@ namespace server.Services
                 await clients.Caller.SendAsync("RankFailed", ex.Message);
             }
         }
+    
     }
 }
