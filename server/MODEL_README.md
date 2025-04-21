@@ -86,13 +86,10 @@ public class RoomSubmit
 
 #### Round
 ```csharp
-namespace server.Models
+public class Round
 {
-    public class Round
-    {
-        public required string TargetName { get; set; }
-        public DateTime EndTime { get; set; }
-    }
+    public required string TargetName { get; set; }
+    public DateTime EndTime { get; set; }
 }
 ```
 
@@ -100,15 +97,13 @@ namespace server.Models
 
 #### Score
 ```csharp
-namespace server.Models
+public class Score
 {
-    public class Score
-    {
-        public Guid UserId { get; set; }
-        public required string UserName { get; set; }
-        public required double ScoreValue { get; set; }
-        public string? Base64Image { get; set; }
-        public string? Comment { get; set; }
-    }
+    public Guid UserId { get; set; }
+    public required string UserName { get; set; }
+    public required double TotalRoundScore { get; set; }
+    public required double CurrentRoundScore { get; set; }
+    public string? Base64Image { get; set; }
+    public string? Comment { get; set; }
 }
 ```

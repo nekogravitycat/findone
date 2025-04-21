@@ -88,6 +88,8 @@
 
 > 僅需由 host 發出訊息
 
+1. 會根據 `round` 參數自動更新 `CurrentRound` 欄位
+
 - **方法名稱**: `GetRound`
 - **參數**:
   - `roomId`: string
@@ -100,6 +102,14 @@
     - `error message`: string
 
 #### 取得該輪成果
+
+> 僅需由 host 發出訊息
+
+1. TotalRoundScore 為使用者的總得分
+2. CurrentRoundScore 為使用者該輪得分
+3. Base64Image 以及 Comment 僅有前三名擁有該屬性 (optional)
+4. Round Index 是取決於該房間的 `CurrentRound` 欄位，若沒有先使用 `GetRound` endpoint 來取得題目，便無法取得該輪成果
+
 - **方法名稱**: `GetRank`
 - **參數**:
   - `roomId`: string
@@ -111,6 +121,9 @@
     - `error message`: string
 
 #### 提交圖片
+
+> 目前限制圖片檔案大小為 5MB
+
 - **方法名稱**: `SubmitImage`
 - **參數**:
   - `userId`: string
