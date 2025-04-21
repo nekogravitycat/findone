@@ -10,12 +10,14 @@ namespace server.Services
         private readonly RoomService _roomService;
         private readonly UserService _userService;
         private readonly ImageService _imageService;
+        private readonly ScoreService _scoreService;
 
-        public GameService(RoomService roomService, UserService userService, ImageService imageService)
+        public GameService(RoomService roomService, UserService userService, ImageService imageService, ScoreService scoreService)
         {
             _roomService = roomService;
             _userService = userService;
             _imageService = imageService;
+            _scoreService = scoreService;
         }
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
@@ -110,6 +112,9 @@ namespace server.Services
                 if (room.HostUserId != user.UserId)
                     throw new Exception("Only the host can start the game");
 
+                if (room.Status != RoomStatus.InProgress)
+                    throw new Exception("Game isn't started or already ended!");
+
                 // validate round index
                 if (roundIndex < 0 || roundIndex >= room.Round)
                     throw new Exception("Invalid round index");
@@ -123,7 +128,7 @@ namespace server.Services
                 // get round info
                 RoomTarget target = room.Targets[roundIndex];
                 int delayBuffer = 1;
-                DateTime endTime = DateTime.Now + (room.TimeLimit + delayBuffer).Seconds();
+                DateTime endTime = DateTime.UtcNow + (room.TimeLimit + delayBuffer).Seconds();
 
                 // update room endTime
                 room.EndTime = endTime;
@@ -131,7 +136,8 @@ namespace server.Services
                 await _roomService.UpdateRoom(room);
 
                 // create round object
-                Round round = new Round { 
+                Round round = new Round
+                {
                     TargetName = target.TargetName,
                     EndTime = endTime
                 };
@@ -144,11 +150,11 @@ namespace server.Services
             }
         }
 
-        public async Task HandleSubmitImage(IClientProxy caller, string userId, int roundIndex, string base64Image)
+        public async Task HandleSubmitImage(IClientProxy caller, string userId, string base64Image)
         {
             try
             {
-                DateTime currnetTime = DateTime.Now;
+                DateTime currentTime = DateTime.UtcNow;
 
                 // validate user
                 User user = await _userService.GetUser(userId);
@@ -159,14 +165,19 @@ namespace server.Services
                 if (room.Status != RoomStatus.InProgress)
                     throw new Exception("Game not started yet or already ended!");
 
-                if (room.EndTime < currnetTime)
+                if (room.EndTime < currentTime)
                     throw new Exception("Round already closed!");
 
-                if (room.CurrentRound != roundIndex)
-                    throw new Exception("Invalid round index!");
+                if (room.CurrentRound == null)
+                    throw new Exception("Round not started yet!");
 
-                // target of current round
-                string target = room.Targets[roundIndex].TargetName;
+                // current round & target of current round
+                int currentRound = room.CurrentRound.Value;
+                string target = room.Targets[currentRound].TargetName;
+
+                bool alreadySubmitted = user.Scores.Any(s => s.RoundIndex == currentRound);
+                if (alreadySubmitted)
+                    throw new Exception("Image already submitted for this round!");
 
                 // analyze
                 ImageResponse result = await _imageService.AnalyzeImage(base64Image, target) ?? throw new Exception("Image analysis failed");
@@ -179,17 +190,18 @@ namespace server.Services
                 UserScore user_score = new UserScore
                 {
                     UserId = Guid.Parse(userId),
-                    RoundIndex = roundIndex,
+                    RoundIndex = currentRound,
                     Comment = result.Comment,
-                    DateTime = currnetTime,
-                    Base64Image = base64Image
+                    DateTime = currentTime,
+                    Base64Image = base64Image,
+                    Score = _scoreService.CaclulateScore(room, currentTime)
                 };
 
                 // add score record to user
                 await _userService.AddScore(user_score);
 
                 // add submit record to room
-                await _roomService.AddSubmit(userId, room.RoomId, currnetTime, roundIndex);
+                await _roomService.AddSubmit(userId, room.RoomId, currentTime, currentRound);
 
                 await caller.SendAsync("ImageAnalysisSuccessed");
             }
@@ -198,5 +210,63 @@ namespace server.Services
                 await caller.SendAsync("ImageAnalysisFailed", ex.Message);
             }
         }
+
+        public async Task HandleGetRank(IHubCallerClients clients, string roomId, string userId)
+        {
+            try
+            {
+                // validate room and user
+                Room room = await _roomService.GetRoom(roomId);
+                User user = await _userService.GetUser(userId);
+
+                if (room.HostUserId != user.UserId)
+                    throw new Exception("Only the host can start the game");
+
+                int currentRound = room.CurrentRound ?? throw new Exception("Round not started yet!");
+                DateTime roundEndTime = room.EndTime ?? throw new Exception("Round not started yet!");
+
+                int timeLimitSeconds = room.TimeLimit;
+
+                // get round info & all of users
+                List<RoomSubmit> submits = room.RoomSubmits[currentRound];
+                User[] allUsers = await _userService.GetUsers(room.UserIds.ToList());
+
+                List<Score> scores = [];
+                int i = 0;
+
+                foreach (RoomSubmit submit in submits)
+                {
+                    User u = allUsers.FirstOrDefault(user => user.UserId == submit.UserId)
+                        ?? throw new Exception("找不到對應的使用者");
+
+                    // get user score
+                    UserScore userScore = u.Scores.FirstOrDefault(s => s.RoundIndex == currentRound) ?? throw new Exception("找不到對應的分數");
+                    double totalRoundScore = u.Scores.Sum(s => s.Score);
+                    double currentRoundScore = userScore.Score;
+
+                    scores.Add(new Score
+                    {
+                        UserId = u.UserId,
+                        UserName = u.UserName,
+                        TotalRoundScore = totalRoundScore,
+                        CurrentRoundScore = currentRoundScore,
+                        Base64Image = i < 3 ? userScore.Base64Image : "",
+                        Comment = i < 3 ? userScore.Comment : ""
+                    });
+
+                    i++;
+                }
+
+                // do decresing-order
+                scores.Sort((a, b) => b.TotalRoundScore.CompareTo(a.TotalRoundScore));
+
+                await clients.Group(roomId).SendAsync("RankInfo", scores);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("RankFailed", ex.Message);
+            }
+        }
+    
     }
 }

@@ -21,6 +21,7 @@ builder.Services.AddSingleton<GoogleAIService>();
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomService>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<ScoreService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

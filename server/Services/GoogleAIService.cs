@@ -53,7 +53,6 @@ namespace server.Services
             await query.AddMedia(base64Image, mimeType: mimeType);
 
             var response = await model.GenerateContent(query);
-            Console.WriteLine($"Response: {response.Text}");
             return string.IsNullOrEmpty(response.Text) ? null : JsonSerializer.Deserialize<ImageResponse>(response.Text);
         }
     }

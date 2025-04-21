@@ -22,8 +22,8 @@
         // relation to users
         public HashSet<Guid> UserIds { get; set; } = new HashSet<Guid>();
         // default : 5 rounds
-        public List<RoomSubmit[]> RoomSubmits { get; set; } =
-            Enumerable.Range(0, 5).Select(_ => new RoomSubmit[0]).ToList();
+        public List<List<RoomSubmit>> RoomSubmits { get; set; } =
+            Enumerable.Range(0, 5).Select(_ => new List<RoomSubmit>()).ToList();
     }
 
     public class RoomTarget

@@ -71,7 +71,11 @@ public class RoomService
     {
         Room room = await GetRoom(roomId);
 
-        room.RoomSubmits[roundIndex].Append(new RoomSubmit { DateTime = datetime, UserId = Guid.Parse(userId) });
+        room.RoomSubmits[roundIndex].Add(new RoomSubmit
+        {
+            DateTime = datetime,
+            UserId = Guid.Parse(userId)
+        });
 
         await UpdateRoom(room);
         return room;
