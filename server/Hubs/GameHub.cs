@@ -1,17 +1,14 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using server.Services;
-using StackExchange.Redis;
 
 namespace server.Hubs
 {
     public class GameHub : Hub
     {
-        private readonly IConnectionMultiplexer _redis;
         private readonly GameService _gameService;
 
-        public GameHub(IConnectionMultiplexer redis, GameService gameService)
+        public GameHub(GameService gameService)
         {
-            _redis = redis;
             _gameService = gameService;
         }
 
