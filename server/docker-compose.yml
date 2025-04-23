@@ -1,0 +1,18 @@
+services:
+  backend:
+    build: .
+    container_name: server-backend
+    ports:
+      - "8080:5134"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:5134
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__RedisConnection=server-redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    container_name: server-redis
+    ports:
+      - "6379:6379"
