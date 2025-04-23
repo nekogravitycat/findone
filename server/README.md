@@ -1,108 +1,86 @@
-#  Backend
-
-## 專案簡介
-
-本專案是基於 ASP.NET Core 和 Redis 的後端應用程式，主要功能包括影像分析與即時互動遊戲。使用 SignalR 進行即時通訊，Redis 用於數據快取和訊息傳遞。
+# FindOne Backend
 
 ## 技術架構
 
-- **ASP.NET Core**: 提供 Web API 和即時通訊支援。
-- **SignalR**: 實現即時雙向通訊。
-- **Redis**: 使用 StackExchange.Redis 作為快取和訊息分發。
+- **後端框架**: ASP.NET Core
+- **即時通訊**: SignalR
+- **快取與訊息佇列**: Redis
+- **容器化**: Docker & Docker Compose
 
 ## 專案結構
 
 ```
-├─Controllers
-│   ├─ ImageAnalysisController.cs
-│   └─ RedisController.cs
-├─Data
-│   └─ images
-│       └─ glasses
-├─Hubs
-│   └─ GameHub.cs
-├─Models
-│   ├─ Room.cs
-│   └─ User.cs
+├─server/
+│   ├─Controllers/
+│   │   └─RedisController.cs      # Redis 快取控制器，提供基本的快取操作 API
+│   ├─Data/
+│   │   └─targets.txt            # 遊戲目標物清單檔案
+│   ├─Hubs/
+│   │   └─GameHub.cs             # SignalR 遊戲中樞，處理即時通訊和遊戲邏輯
+│   ├─Models/
+│   │   ├─Room.cs                # 房間模型，定義遊戲房間的結構和狀態
+│   │   ├─Image.cs               # 影像模型，處理影像相關的資料結構
+│   │   ├─Round.cs               # 回合模型，定義遊戲回合的結構
+│   │   ├─Score.cs               # 分數模型，處理玩家分數相關的資料結構
+│   │   └─User.cs                # 使用者模型，定義玩家資料結構
+│   ├─Services/
+│   │   ├─GameService.cs         # 遊戲服務，處理核心遊戲邏輯
+│   │   ├─GoogleAIService.cs     # Google AI 服務，整合 Google Gemini API 進行影像分析
+│   │   ├─ImageService.cs        # 影像服務，處理影像分析和處理
+│   │   ├─RoomService.cs         # 房間服務，管理遊戲房間的狀態和操作
+│   │   ├─UserService.cs         # 使用者服務，處理玩家資料的管理
+│   │   └─ScoreService.cs        # 分數服務，計算和管理玩家分數
+│   ├─Models/
+│       ├─IdGenerator.cs         # ID 生成器，用於生成唯一識別碼
+│       └─ImageHelper.cs         # 影像輔助工具，處理影像格式轉換和驗證
+├─Dockerfile                     # Docker 容器設定檔
+├─docker-compose.yml             # Docker Compose 設定檔，定義服務編排
+└─.dockerignore                  # Docker 忽略檔案設定
 ```
 
-### Controllers
+## 系統需求
 
-- **ImageAnalysisController.cs**: 負責影像分析處理。
-- **RedisController.cs**: 管理 Redis 快取和資料操作。
+- Docker Desktop
+- .NET Core SDK (用於本地開發)
 
-### Hubs
+## How to Run?
 
-- **GameHub.cs**: 使用 SignalR 進行即時遊戲互動。
+> 推薦使用 Docker Compose
 
-### Models
+### Docker Compose
 
-- **Room.cs**: 定義房間模型。
-- **User.cs**: 定義使用者模型。
-
-## 安裝與執行
-
-### 需求
-
-- .NET 6 或以上
-- Redis 伺服器（WSL 安裝）
-- Visual Studio (建議)
-- Microsoft.AspNetCore.SignalR 套件
-- StackExchange.Redis 套件
-
-### 步驟
-
-1. 安裝 .NET SDK
+1. 確保已安裝並啟動 Docker Desktop
+2. 在專案根目錄執行：
    ```bash
-   dotnet --version
+   docker-compose up -d
    ```
-2. 使用 WSL 安裝 Redis
+3. 服務將在以下端口運行：
+   - 後端 API: ws://localhost:8080/gamehub
+   - Redis: localhost:6379
+4. 關閉服務：
    ```bash
-   # 更新軟體包
-   sudo apt update
-   # 安裝 Redis
-   sudo apt install redis-server
-   # 啟動 Redis 服務
-   sudo service redis-server start
-   redis-cli
-   # 驗證 Redis 是否正在運行
-   ping
+   docker-compose down -v
    ```
-3. 安裝必要套件
+
+### 本地開發
+
+1. 克隆專案：
    ```bash
-   dotnet add package Microsoft.AspNetCore.SignalR
-   dotnet add package StackExchange.Redis
+   git clone [repository-url]
+   cd findone
    ```
-4. 使用 Visual Studio 打開專案
-5. 執行專案
 
-## Redis cmd
+2. 安裝依賴：
+   ```bash
+   cd server
+   dotnet restore
+   ```
 
-```bash
-KEYS *                         # 列出所有 keys（不建議在生產環境使用）
-KEYS user:*                    # 篩選 keys（例如以 user: 開頭的 key）
-DEL mykey                      # 刪除 key
-```
+3. 運行專案：
+   ```bash
+   dotnet run
+   ```
 
-```bash
-SET mykey "hello"              # 設定值
-GET mykey                      # 取得值
-```
+## 授權
 
-```bash
-FLUSHDB                       # 清除目前資料庫所有資料
-FLUSHALL                      # 清除所有資料庫
-DBSIZE                        # 當前資料庫 key 數量
-INFO                          # 顯示伺服器資訊
-```
-
-## 設定
-
-請確保在 `appsettings.json` 中正確配置 Redis 連線字串：
-
-```json
-"Redis": {
-    "ConnectionString": "localhost:6379"
-}
-```
-
+本專案採用 MIT 授權條款 - 詳見 [LICENSE](LICENSE) 文件
