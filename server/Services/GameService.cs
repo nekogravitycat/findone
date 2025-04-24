@@ -155,7 +155,7 @@ namespace server.Services
         public async Task HandleSubmitImage(string connectionId, string roomId, string userId, string base64Image)
         {
             // message queue
-            await _roomEventService.EnqueueSubmitAsync(connectionId, roomId, userId, base64Image, DateTime.UtcNow);
+            await _roomEventService.EnqueueSubmitAsync(connectionId, roomId, userId, base64Image);
         }
 
         public async Task HandleGetRank(IHubCallerClients clients, string roomId, string userId)
