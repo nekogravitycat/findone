@@ -10,16 +10,12 @@ namespace server.Services
         private readonly RoomService _roomService;
         private readonly RoomEventService _roomEventService;
         private readonly UserService _userService;
-        private readonly ImageService _imageService;
-        private readonly ScoreService _scoreService;
 
-        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService, ImageService imageService, ScoreService scoreService)
+        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService)
         {
             _roomService = roomService;
             _roomEventService = roomEventService;
             _userService = userService;
-            _imageService = imageService;
-            _scoreService = scoreService;
         }
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
