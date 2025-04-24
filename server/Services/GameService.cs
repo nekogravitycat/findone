@@ -8,13 +8,15 @@ namespace server.Services
     public class GameService
     {
         private readonly RoomService _roomService;
+        private readonly RoomEventService _roomEventService;
         private readonly UserService _userService;
         private readonly ImageService _imageService;
         private readonly ScoreService _scoreService;
 
-        public GameService(RoomService roomService, UserService userService, ImageService imageService, ScoreService scoreService)
+        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService, ImageService imageService, ScoreService scoreService)
         {
             _roomService = roomService;
+            _roomEventService = roomEventService;
             _userService = userService;
             _imageService = imageService;
             _scoreService = scoreService;
@@ -150,65 +152,10 @@ namespace server.Services
             }
         }
 
-        public async Task HandleSubmitImage(IClientProxy caller, string userId, string base64Image)
+        public async Task HandleSubmitImage(string connectionId, string roomId, string userId, string base64Image)
         {
-            try
-            {
-                DateTime currentTime = DateTime.UtcNow;
-
-                // validate user
-                User user = await _userService.GetUser(userId);
-
-                // validate room
-                Room room = await _roomService.GetRoom(user.RoomId);
-
-                if (room.Status != RoomStatus.InProgress)
-                    throw new Exception("Game not started yet or already ended!");
-
-                if (room.EndTime < currentTime)
-                    throw new Exception("Round already closed!");
-
-                if (room.CurrentRound == null)
-                    throw new Exception("Round not started yet!");
-
-                // current round & target of current round
-                int currentRound = room.CurrentRound.Value;
-                string target = room.Targets[currentRound].TargetName;
-
-                bool alreadySubmitted = user.Scores.Any(s => s.RoundIndex == currentRound);
-                if (alreadySubmitted)
-                    throw new Exception("Image already submitted for this round!");
-
-                // analyze
-                ImageResponse result = await _imageService.AnalyzeImage(base64Image, target) ?? throw new Exception("Image analysis failed");
-
-                // check if image is correct
-                if (result.Match == false)
-                    throw new Exception("Image does not match the target");
-
-                // update user
-                UserScore user_score = new UserScore
-                {
-                    UserId = Guid.Parse(userId),
-                    RoundIndex = currentRound,
-                    Comment = result.Comment,
-                    DateTime = currentTime,
-                    Base64Image = base64Image,
-                    Score = _scoreService.CaclulateScore(room, currentTime)
-                };
-
-                // add score record to user
-                await _userService.AddScore(user_score);
-
-                // add submit record to room
-                await _roomService.AddSubmit(userId, room.RoomId, currentTime, currentRound);
-
-                await caller.SendAsync("ImageAnalysisSuccessed");
-            }
-            catch (Exception ex)
-            {
-                await caller.SendAsync("ImageAnalysisFailed", ex.Message);
-            }
+            // message queue
+            await _roomEventService.EnqueueSubmitAsync(connectionId, roomId, userId, base64Image, DateTime.UtcNow);
         }
 
         public async Task HandleGetRank(IHubCallerClients clients, string roomId, string userId)

@@ -5,7 +5,7 @@ namespace server.Services
 {
     public class ScoreService
     {
-        public double CaclulateScore(Room room, DateTime submitTime)
+        public double CalculateScore(Room room, DateTime submitTime)
         {
             DateTime roundEndTime = room.EndTime ?? throw new Exception("Round not started yet!");
             int timeLimitSeconds = room.TimeLimit;
