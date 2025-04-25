@@ -1,43 +1,45 @@
-using StackExchange.Redis;
+using server.Extensions;
 using server.Hubs;
 using server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container and add Redis Connection
-var redisConnection = builder.Configuration.GetConnectionString("RedisConnection");
-builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnection));
+// Configure Redis
+builder.Services.AddRedis(builder.Configuration);
 
-// Add services to the container. (SignalR)
+// Configure SignalR
 builder.Services.AddSignalR(options =>
 {
     options.MaximumReceiveMessageSize = 1024 * 1024 * 5; // 5MB
 });
 
-builder.Services.AddControllers();
-
+// Register services
 builder.Services.AddSingleton<ImageService>();
 builder.Services.AddSingleton<GoogleAIService>();
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomService>();
 builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<ScoreService>();
+builder.Services.AddHostedService<RoomEventService>();
+builder.Services.AddSingleton<RoomEventService>();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add Controllers & Swagger
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
+
 app.UseEndpoints(static endpoints =>
 {
     _ = endpoints.MapControllers();

@@ -6,7 +6,7 @@ namespace server.Services
 {
     public class GoogleAIService
     {
-        private readonly string _apiKey;
+        private readonly string? _apiKey;
         private readonly string _systemInstruction =
             "You are an image recognition judge in a fun multiplayer game. " +
             "Each round, players submit images to match quirky prompts." +
@@ -36,7 +36,8 @@ namespace server.Services
 
         public GoogleAIService(IConfiguration configuration)
         {
-            _apiKey = configuration["APIKeys:GOOGLE_API_KEY"];
+            _apiKey = configuration["APIKeys:GOOGLE_API_KEY"]
+                ?? throw new ArgumentNullException("GOOGLE_API_KEY", "Missing GOOGLE_API_KEY in configuration."); ;
         }
 
         public async Task<ImageResponse?> AnalyzeImage(string base64Image, string mimeType, string clientRequest)
@@ -53,7 +54,6 @@ namespace server.Services
             await query.AddMedia(base64Image, mimeType: mimeType);
 
             var response = await model.GenerateContent(query);
-            Console.WriteLine($"Response: {response.Text}");
             return string.IsNullOrEmpty(response.Text) ? null : JsonSerializer.Deserialize<ImageResponse>(response.Text);
         }
     }

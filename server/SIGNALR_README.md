@@ -6,120 +6,7 @@
 
 > WARNING: 請在每個 request 後面加上 [Record Separator](https://symbl.cc/en/001E/)
 
-#### 1. 建立連接
-1. 開啟 Postman
-2. 建立新的 WebSocket 請求
-3. 輸入 SignalR 連接 URL：`ws://localhost:5432/gamehub` (未來會拆成不同的 endpoint url)
-4. 在連接訊息中輸入：
-```json
-{
-    "protocol": "json",
-    "version": 1
-} 
-```
-
-#### 2. 獲取用戶資訊
-```json
-{
-    "type": 1,
-    "invocationId": "1",
-    "target": "GetUser",
-    "arguments": [
-        "userId"
-    ]
-}
-```
-
-#### 3. 獲取房間資訊
-```json
-{
-    "type": 1,
-    "invocationId": "2",
-    "target": "GetRoom",
-    "arguments": [
-        "roomId"
-    ]
-}
-```
-
-#### 4. 建立房間
-```json
-{
-    "type": 1,
-    "invocationId": "3",
-    "target": "CreateRoom",
-    "arguments": [
-        "userName",
-        5,
-        60
-    ]
-}
-```
-
-#### 5. 加入房間
-```json
-{
-    "type": 1,
-    "invocationId": "4",
-    "target": "GameJoin",
-    "arguments": [
-        "roomId",
-        "userName"
-    ]
-}
-```
-
-#### 6. 開始遊戲 ** 尚未完成
-```json
-{
-    "type": 1,
-    "invocationId": "5",
-    "target": "GameStart",
-    "arguments": [
-        "roomId"
-    ]
-}
-```
-
-#### 7. 提交圖片
-
-> **base64Image 圖片大小僅支援至 5MB !**
-
-```json
-{
-    "type": 1,
-    "invocationId": "6",
-    "target": "SubmitImage",
-    "arguments": [
-        "userId",
-        "roundIndex",
-        "base64Image"
-    ]
-}
-```
-
-### 訊息類型說明
-- `type: 1` - 調用方法
-- `type: 2` - 串流項目
-- `type: 3` - 完成串流
-- `type: 4` - 取消串流
-- `type: 5` - Ping
-- `type: 6` - Close
-
-### 測試注意事項
-1. 確保 `invocationId` 每次請求都是唯一的
-2. 連接後需要等待服務器返回連接成功的訊息
-3. 所有方法調用都需要包含 `type` 和 `invocationId`
-4. 注意檢查服務器返回的錯誤訊息
-
-### 常見錯誤訊息
-```json
-{
-    "type": 7,
-    "error": "錯誤訊息",
-    "invocationId": "1"
-}
-```
+請根據 [Postman Documents](https://warped-robot-79802.postman.co/workspace/My-Workspace~3161c694-30f3-4b7e-8bb0-23d06a01cf20/ws-raw-request/67ffb3afac0e77435e200472) 進行測試 
 
 ## Endpoints
 
@@ -133,6 +20,10 @@
 - **回傳事件**: `UserNotFound`
   - 參數: `userId`: string
   - 參數: `error message`: string
+- **回傳事件**: `UserNotFound`
+  - 參數:
+    - `userId`: string
+    - `error message`: string
 
 ### 2. 房間相關
 #### 獲取房間資訊
@@ -144,6 +35,10 @@
 - **回傳事件**: `RoomNotFound`
   - 參數: `roomId`: string
   - 參數: `error message`: string
+- **回傳事件**: `RoomNotFound`
+  - 參數:
+    - `roomId`: string
+    - `error message`: string
 
 #### 建立房間
 - **方法名稱**: `CreateRoom`
@@ -154,8 +49,14 @@
 - **回傳事件**: `RoomCreated`
   - 參數: `roomId`: string
   - 參數: `userId`: string
+- **回傳事件**: `RoomCreatedFailed`
+  - 參數:
+    - `error message`: string
 
 #### 加入房間
+
+> 該房間開始遊戲後，便無法讓後來使用者加入
+
 - **方法名稱**: `GameJoin`
 - **參數**:
   - `roomId`: string
@@ -164,22 +65,68 @@
   - 參數: 
     - `roomId`: string
     - `user`: User object
+- **回傳事件**: `GameJoinFailed`
+  - 參數:
+    - `error message`: string
 
 #### 開始遊戲
+
+> 僅需由 host 發出訊息
+
 - **方法名稱**: `GameStart`
 - **參數**:
   - `roomId`: string
-- **回傳事件**: `GameStarted`
+  - `userId`: string
+- **回傳事件**: `GameStarted` (發送給所有房間使用者)
+  - 參數: 無
+- **回傳事件**: `GameStartFailed`
   - 參數:
-    - `roomId`: string
-    - `room`: Room object
+    - `error message`: string
 
 ### 3. 遊戲相關
+#### 取得該輪題目和結束時間資訊
+
+> 僅需由 host 發出訊息
+
+1. 會根據 `round` 參數自動更新 `CurrentRound` 欄位
+
+- **方法名稱**: `GetRound`
+- **參數**:
+  - `roomId`: string
+  - `userId`: string
+  - `roundIndex`: number
+- **回傳事件**: `RoundInfo`
+  - 參數: round: Round
+- **回傳事件**: `RoundInfoFailed`
+  - 參數:
+    - `error message`: string
+
+#### 取得該輪成果
+
+> 僅需由 host 發出訊息
+
+1. TotalRoundScore 為使用者的總得分
+2. CurrentRoundScore 為使用者該輪得分
+3. Base64Image 以及 Comment 僅有前三名擁有該屬性 (optional)
+4. Round Index 是取決於該房間的 `CurrentRound` 欄位，若沒有先使用 `GetRound` endpoint 來取得題目，便無法取得該輪成果
+
+- **方法名稱**: `GetRank`
+- **參數**:
+  - `roomId`: string
+  - `userId`: string
+- **回傳事件**: `RankInfo`
+  - 參數: scores: List<Score>
+- **回傳事件**: `RankFailed`
+  - 參數:
+    - `error message`: string
+
 #### 提交圖片
+
+> 目前限制圖片檔案大小為 5MB
+
 - **方法名稱**: `SubmitImage`
 - **參數**:
   - `userId`: string
-  - `roundIndex`: number
   - `base64Image`: string
 - **回傳事件**: `ImageAnalysisSuccessed`
   - 參數: 無
@@ -187,16 +134,6 @@
   - 參數:
     - `error message`: string
 
-### 4. Testing
-#### 發送訊息
-- **方法名稱**: `SendMessage`
-- **參數**:
-  - `user`: string
-  - `message`: string
-- **回傳事件**: `ReceiveMessage`
-  - 參數:
-    - `user`: string
-    - `message`: string
 
 ## 注意事項
 1. 確保在連接前已經正確配置了 SignalR 服務
