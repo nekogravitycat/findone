@@ -1,22 +1,45 @@
-﻿namespace server.Models
-{
-    public class User
-    {
-        public Guid UserId { get; set; } = Guid.NewGuid();
-        public required string UserName { get; init; }
-        public string RoomId { get; set; } = string.Empty;
-        public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
-        public List<UserScore> Scores { get; set; } = new List<UserScore>();
-    }
+﻿using System.Text.Json.Serialization;
 
-    public class UserScore
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public required DateTime DateTime { get; set; }
-        public Guid UserId { get; set; }
-        public int RoundIndex { get; set; }
-        public required string Base64Image { get; set; }
-        public required string Comment { get; set; }
-        public double Score { get; set; }
-    }
+namespace server.Models {
+  public class User
+  {
+    [JsonPropertyName("userId")]
+    public Guid UserId { get; set; } = Guid.NewGuid();
+
+    [JsonPropertyName("userName")]
+    public required string UserName { get; init; }
+
+    [JsonPropertyName("roomId")]
+    public string RoomId { get; set; } = string.Empty;
+
+    [JsonPropertyName("joinedAt")]
+    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("scores")]
+    public List<UserScore> Scores { get; set; } = new List<UserScore>();
+  }
+
+  public class UserScore
+  {
+    [JsonPropertyName("id")]
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    [JsonPropertyName("dateTime")]
+    public required DateTime DateTime { get; set; }
+
+    [JsonPropertyName("userId")]
+    public Guid UserId { get; set; }
+
+    [JsonPropertyName("roundIndex")]
+    public int RoundIndex { get; set; }
+
+    [JsonPropertyName("base64Image")]
+    public required string Base64Image { get; set; }
+
+    [JsonPropertyName("comment")]
+    public required string Comment { get; set; }
+
+    [JsonPropertyName("score")]
+    public double Score { get; set; }
+  }
 }
