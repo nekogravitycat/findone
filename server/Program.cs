@@ -20,6 +20,8 @@ builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomService>();
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<ScoreService>();
+builder.Services.AddHostedService<RoomEventService>();
+builder.Services.AddSingleton<RoomEventService>();
 
 // Add Controllers & Swagger
 builder.Services.AddControllers();

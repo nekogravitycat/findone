@@ -30,8 +30,8 @@ namespace server.Hubs
         public async Task GetRound(string roomId, string userId, int roundIndex)
             => await _gameService.HandleGetRound(Clients, roomId, userId, roundIndex);
 
-        public async Task SubmitImage(string userId, string base64Image)
-            => await _gameService.HandleSubmitImage(Clients.Caller, userId, base64Image);
+        public async Task SubmitImage(string roomId, string userId, string base64Image)
+            => await _gameService.HandleSubmitImage(Context.ConnectionId, roomId, userId, base64Image);
 
         public async Task GetRank(string roomId, string userId)
             => await _gameService.HandleGetRank(Clients, roomId, userId);
