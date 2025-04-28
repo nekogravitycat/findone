@@ -1,3 +1,25 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { SignalRService } from "@/services/signalr"
+import { onMounted, ref } from "vue"
 
-<template></template>
+let api = new SignalRService()
+
+const name = ref("")
+
+async function createRoom() {
+  let res = await api.createRoom(name.value, 5, 100, 100)
+  console.log("Room created", res)
+}
+
+onMounted(async () => {
+  let connection = await api.start()
+  console.log("SignalR connection started", connection)
+})
+</script>
+
+<template>
+  <!-- Input textbox for name -->
+  <input v-model="name" type="text" placeholder="Name" />
+  <!-- Button for create room -->
+  <button @click="createRoom">Create Room</button>
+</template>
