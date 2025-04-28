@@ -1,3 +1,5 @@
+import type { UserEntity } from "./userEntity"
+
 export interface RoomEntity {
   roomId: string
   hostUserId: string
@@ -21,6 +23,16 @@ export interface RoomTargetEntity {
 export interface RoomSubmitEntity {
   dateTime: Date
   userId: string
+}
+
+export interface RoomCreateResultEntity {
+  roomId: string
+  user: UserEntity
+}
+
+export interface RoomJoinResultEntity {
+  roomId: string
+  user: UserEntity
 }
 
 export type RoomStatus = "Waiting" | "InProgress" | "Finished"

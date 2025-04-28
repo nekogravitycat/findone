@@ -1,12 +1,18 @@
-import type { RoomEntity } from "@/entities/roomEntity"
+import type {
+  RoomCreateResultEntity,
+  RoomEntity,
+  RoomJoinResultEntity,
+} from "@/entities/roomEntity"
+import type { RoundEntity } from "@/entities/roundEntity"
+import type { ScoreEntity } from "@/entities/scoreEntity"
 import type { UserEntity } from "@/entities/userEntity"
-import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr"
+import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr"
 
 const baseUrl = "http://localhost:8080"
+const timeoutMs = 5000
 
 export class SignalRService {
   private connection: HubConnection | null = null
-  private reconnecting = false
 
   constructor() {}
 
@@ -15,13 +21,11 @@ export class SignalRService {
       return this.connection
     }
 
-    this.connection = new HubConnectionBuilder().withUrl(`${baseUrl}/gamehub`).build()
-
-    // Auto reconnect
-    this.connection.onclose(async () => {
-      console.warn("SignalR connection closed, trying to reconnect...")
-      await this.tryReconnect()
-    })
+    this.connection = new HubConnectionBuilder()
+      .withUrl(`${baseUrl}/gamehub`)
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Information)
+      .build()
 
     try {
       await this.connection.start()
@@ -47,33 +51,12 @@ export class SignalRService {
     }
   }
 
-  private async tryReconnect() {
-    if (this.reconnecting) {
-      return
-    }
-
-    this.reconnecting = true
-
-    while (this.connection) {
-      try {
-        await this.connection.start()
-        console.log("SignalR reconnected")
-        this.reconnecting = false
-        return
-      } catch (err) {
-        console.warn("Reconnect failed, retrying in 3s...")
-        await new Promise((res) => setTimeout(res, 3000))
-      }
-    }
-  }
-
-  /** General invoke & wait for response method */
+  // General invoke & wait for response method
   private invokeWithResponse<T = any>(
     methodName: string,
-    sendPayload: any,
     successEvent: string,
     failureEvent: string,
-    timeoutMs = 5000
+    ...sendPayload: any[]
   ): Promise<T> {
     if (!this.connection) {
       return Promise.reject(new Error("SignalR connection is not established"))
@@ -87,8 +70,8 @@ export class SignalRService {
           clearTimeout(timeoutId)
           timeoutId = null
         }
-        this.connection?.off(successEvent, successHandler)
-        this.connection?.off(failureEvent, failureHandler)
+        this.connection?.off(successEvent)
+        this.connection?.off(failureEvent)
       }
 
       const successHandler = (response: T) => {
@@ -111,7 +94,7 @@ export class SignalRService {
       }, timeoutMs)
 
       // Call server method
-      this.connection!.invoke(methodName, sendPayload).catch((err) => {
+      this.connection!.invoke(methodName, ...sendPayload).catch((err) => {
         cleanup()
         reject(err)
       })
@@ -120,83 +103,65 @@ export class SignalRService {
 
   // API methods
 
-  public async getUser(userId: string, timeoutMs = 5000) {
-    return this.invokeWithResponse<UserEntity>(
-      "GetUser",
-      userId,
-      "UserFound",
-      "UserNotFound",
-      timeoutMs
-    )
+  public async getUser(userId: string) {
+    return this.invokeWithResponse<UserEntity>("GetUser", "UserFound", "UserNotFound", userId)
   }
 
-  public async getRoom(roomId: string, timeoutMs = 5000) {
-    return this.invokeWithResponse<RoomEntity>(
-      "GetRoom",
-      roomId,
-      "RoomFound",
-      "RoomNotFound",
-      timeoutMs
-    )
+  public async getRoom(roomId: string) {
+    return this.invokeWithResponse<RoomEntity>("GetRoom", "RoomFound", "RoomNotFound", roomId)
   }
 
-  public async createRoom(userName: string, round: number, timeLimit: number, timeoutMs = 5000) {
-    return this.invokeWithResponse(
+  public async createRoom(userName: string, round: number, timeLimitSec: number) {
+    return this.invokeWithResponse<RoomCreateResultEntity>(
       "CreateRoom",
-      { userName, round, timeLimit },
       "RoomCreated",
       "RoomCreatedFailed",
-      timeoutMs
+      ...[userName, round, timeLimitSec]
     )
   }
 
-  public async joinRoom(roomId: string, userName: string, timeoutMs = 5000) {
-    return this.invokeWithResponse(
+  public async joinRoom(roomId: string, userName: string) {
+    return this.invokeWithResponse<RoomJoinResultEntity>(
       "GameJoin",
-      { roomId, userName },
       "GameJoined",
       "GameJoinFailed",
-      timeoutMs
+      ...[roomId, userName]
     )
   }
 
-  public async startGame(roomId: string, userId: string, timeoutMs = 5000) {
-    return this.invokeWithResponse(
+  public async startGame(roomId: string, userId: string) {
+    return this.invokeWithResponse<null>(
       "GameStart",
-      { roomId, userId },
       "GameStarted",
       "GameStartFailed",
-      timeoutMs
+      ...[roomId, userId]
     )
   }
 
-  public async getRound(roomId: string, userId: string, roundIndex: number, timeoutMs = 5000) {
-    return this.invokeWithResponse(
+  public async getRound(roomId: string, userId: string, roundIndex: number) {
+    return this.invokeWithResponse<RoundEntity>(
       "GetRound",
-      { roomId, userId, roundIndex },
       "RoundInfo",
       "RoundInfoFailed",
-      timeoutMs
+      ...[roomId, userId, roundIndex]
     )
   }
 
-  public async getRank(roomId: string, userId: string, timeoutMs = 5000) {
-    return this.invokeWithResponse(
+  public async getRank(roomId: string, userId: string) {
+    return this.invokeWithResponse<ScoreEntity[]>(
       "GetRank",
-      { roomId, userId },
       "RankInfo",
       "RankFailed",
-      timeoutMs
+      ...[roomId, userId]
     )
   }
 
-  public async submitImage(userId: string, base64Image: string, timeoutMs = 5000) {
-    return this.invokeWithResponse(
+  public async submitImage(userId: string, base64Image: string) {
+    return this.invokeWithResponse<null>(
       "SubmitImage",
-      { userId, base64Image },
       "ImageAnalysisSuccessed",
       "ImageAnalysisFailed",
-      timeoutMs
+      ...[userId, base64Image]
     )
   }
 }

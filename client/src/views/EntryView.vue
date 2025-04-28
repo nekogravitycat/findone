@@ -7,8 +7,8 @@ let api = new SignalRService()
 const name = ref("")
 
 async function createRoom() {
-  let res = await api.createRoom(name.value, 5, 100, 100)
-  console.log("Room created", res)
+  let res = await api.createRoom(name.value, 5, 100)
+  console.log(`Room created: room=${res.roomId}, user=${res.user}`)
 }
 
 onMounted(async () => {
