@@ -1,6 +1,8 @@
 ﻿using Humanizer;
 using Microsoft.AspNetCore.SignalR;
 using server.Models;
+using System.Text.Json;
+using static server.Models.Response;
 
 namespace server.Services
 {
@@ -23,6 +25,7 @@ namespace server.Services
             try
             {
                 User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
+
                 await caller.SendAsync("UserFound", user);
             }
             catch (Exception ex)
@@ -54,7 +57,14 @@ namespace server.Services
             await _userService.UpdateUser(user);
 
             await groups.AddToGroupAsync(context.ConnectionId, room.RoomId);
-            await caller.SendAsync("RoomCreated", room.RoomId, user.UserId);
+
+            CreateRoomResponse response = new()
+            {
+                RoomId = room.RoomId,
+                UserId = user.UserId,
+            };
+
+            await caller.SendAsync("RoomCreated", response);
         }
 
         public async Task HandleJoinRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string roomId, string userName)
@@ -66,8 +76,14 @@ namespace server.Services
             user.RoomId = room.RoomId;
             await _userService.UpdateUser(user);
 
+            var response = new
+            {
+                roomId = roomId,
+                user = user
+            };
+
             await groups.AddToGroupAsync(context.ConnectionId, roomId);
-            await caller.SendAsync("GameJoined", roomId, user);
+            await caller.SendAsync("GameJoined", response);
         }
 
         public async Task HandleStartGame(IHubCallerClients clients, string roomId, string userId)
