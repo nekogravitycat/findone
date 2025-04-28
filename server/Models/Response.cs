@@ -8,8 +8,16 @@ namespace server.Models
         {
             [JsonPropertyName("roomId")]
             public required string RoomId { get; set; }
-            [JsonPropertyName("userId")]
-            public Guid UserId { get; set; }
+            [JsonPropertyName("user")]
+            public required User User { get; set; }
+        }
+
+        public class JoinRoomResponse
+        {
+            [JsonPropertyName("roomId")]
+            public required string RoomId { get; set; }
+            [JsonPropertyName("user")]
+            public required User User { get; set; }
         }
     }
 }
