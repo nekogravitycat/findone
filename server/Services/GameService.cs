@@ -49,6 +49,9 @@ namespace server.Services
 
         public async Task HandleCreateRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string userName, int round, int timeLimit)
         {
+            try
+            {
+
             User user = await _userService.CreateUser(userName);
             Room room = await _roomService.CreateRoom(user, round, timeLimit);
 
@@ -61,10 +64,15 @@ namespace server.Services
             CreateRoomResponse response = new()
             {
                 RoomId = room.RoomId,
-                UserId = user.UserId,
+                User = user,
             };
 
             await caller.SendAsync("RoomCreated", response);
+            }
+            catch (Exception ex)
+            {
+                await caller.SendAsync("RoomCreateFailed", ex.Message);
+            }
         }
 
         public async Task HandleJoinRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string roomId, string userName)
@@ -76,10 +84,10 @@ namespace server.Services
             user.RoomId = room.RoomId;
             await _userService.UpdateUser(user);
 
-            var response = new
+            JoinRoomResponse response = new()
             {
-                roomId = roomId,
-                user = user
+                RoomId = roomId,
+                User = user
             };
 
             await groups.AddToGroupAsync(context.ConnectionId, roomId);
