@@ -9,12 +9,10 @@ import type { UserEntity } from "@/entities/userEntity"
 import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr"
 
 const baseUrl = "http://localhost:8080"
-const timeoutMs = 5000
 
 export class SignalRService {
+  private readonly timeoutMs = 5000
   private connection: HubConnection | null = null
-
-  constructor() {}
 
   public async start() {
     if (this.connection && this.connection.state === "Connected") {
@@ -22,7 +20,7 @@ export class SignalRService {
     }
 
     this.connection = new HubConnectionBuilder()
-      .withUrl(`${baseUrl}/gamehub`)
+      .withUrl(`${baseUrl}/gamehub`, { withCredentials: true })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build()
@@ -33,6 +31,7 @@ export class SignalRService {
     } catch (err) {
       console.error("SignalR connection error:", err)
       this.connection = null
+      throw err
     }
 
     return this.connection
@@ -70,8 +69,8 @@ export class SignalRService {
           clearTimeout(timeoutId)
           timeoutId = null
         }
-        this.connection?.off(successEvent)
-        this.connection?.off(failureEvent)
+        this.connection?.off(successEvent, successHandler)
+        this.connection?.off(failureEvent, failureHandler)
       }
 
       const successHandler = (response: T) => {
@@ -91,7 +90,7 @@ export class SignalRService {
       timeoutId = setTimeout(() => {
         cleanup()
         reject(new Error(`Timeout waiting for ${successEvent}/${failureEvent}`))
-      }, timeoutMs)
+      }, this.timeoutMs)
 
       // Call server method
       this.connection!.invoke(methodName, ...sendPayload).catch((err) => {
@@ -120,6 +119,7 @@ export class SignalRService {
     )
   }
 
+  // Cannot be called after the game starts
   public async joinRoom(roomId: string, userName: string) {
     return this.invokeWithResponse<RoomJoinResultEntity>(
       "GameJoin",
@@ -129,6 +129,7 @@ export class SignalRService {
     )
   }
 
+  // Only for game host to call, all players will receive the info
   public async startGame(roomId: string, userId: string) {
     return this.invokeWithResponse<null>(
       "GameStart",
@@ -138,6 +139,7 @@ export class SignalRService {
     )
   }
 
+  // Only for game host to call, all players will receive the info
   public async getRound(roomId: string, userId: string, roundIndex: number) {
     return this.invokeWithResponse<RoundEntity>(
       "GetRound",
@@ -147,6 +149,7 @@ export class SignalRService {
     )
   }
 
+  // Only for game host to call, all players will receive the info
   public async getRank(roomId: string, userId: string) {
     return this.invokeWithResponse<ScoreEntity[]>(
       "GetRank",
@@ -156,6 +159,7 @@ export class SignalRService {
     )
   }
 
+  // Image size limit: 5MB
   public async submitImage(userId: string, base64Image: string) {
     return this.invokeWithResponse<null>(
       "SubmitImage",
