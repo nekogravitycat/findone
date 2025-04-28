@@ -4,6 +4,18 @@ using server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add cors policy
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Configure Redis
 builder.Services.AddRedis(builder.Configuration);
 
@@ -38,6 +50,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+
+app.UseCors();
+
 app.UseAuthorization();
 
 app.UseEndpoints(static endpoints =>
