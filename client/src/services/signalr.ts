@@ -1,8 +1,4 @@
-import type {
-  RoomCreateResultEntity,
-  RoomEntity,
-  RoomJoinResultEntity,
-} from "@/entities/roomEntity"
+import type { RoomEntity, RoomJoinResultEntity } from "@/entities/roomEntity"
 import type { RoundEntity } from "@/entities/roundEntity"
 import type { ScoreEntity } from "@/entities/scoreEntity"
 import type { UserEntity } from "@/entities/userEntity"
@@ -111,7 +107,7 @@ export class SignalRService {
   }
 
   public async createRoom(userName: string, round: number, timeLimitSec: number) {
-    return this.invokeWithResponse<RoomCreateResultEntity>(
+    return this.invokeWithResponse<RoomJoinResultEntity>(
       "CreateRoom",
       "RoomCreated",
       "RoomCreatedFailed",
@@ -167,5 +163,19 @@ export class SignalRService {
       "ImageAnalysisFailed",
       ...[userId, base64Image]
     )
+  }
+
+  // Listen to a SignalR event once, then automatically unsubscribe
+  public onEventOnce<T = void>(eventName: string, callback: (data: T) => void) {
+    if (!this.connection) {
+      return
+    }
+
+    const handler = (data: T) => {
+      this.connection?.off(eventName, handler)
+      callback(data)
+    }
+
+    this.connection.on(eventName, handler)
   }
 }
