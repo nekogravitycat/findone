@@ -1,21 +1,13 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace server.Models
 {
     public class Response
     {
-        public class CreateRoomResponse
+        public class RoomUserResponse
         {
-            [JsonPropertyName("roomId")]
-            public required string RoomId { get; set; }
-            [JsonPropertyName("user")]
-            public required User User { get; set; }
-        }
-
-        public class JoinRoomResponse
-        {
-            [JsonPropertyName("roomId")]
-            public required string RoomId { get; set; }
+            [JsonPropertyName("room")]
+            public required Room Room { get; set; }
             [JsonPropertyName("user")]
             public required User User { get; set; }
         }

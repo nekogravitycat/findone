@@ -22,7 +22,7 @@ namespace server.Hubs
             => await _gameService.HandleCreateRoom(Context, Clients.Caller, Groups, userName, round, timeLimit);
 
         public async Task GameJoin(string roomId, string userName)
-            => await _gameService.HandleJoinRoom(Context, Clients.Caller, Groups, roomId, userName);
+            => await _gameService.HandleJoinRoom(Context, Clients, Clients.Caller, Groups, roomId, userName);
 
         public async Task GameStart(string roomId, string userId)
             => await _gameService.HandleStartGame(Clients, roomId, userId);
