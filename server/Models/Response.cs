@@ -4,12 +4,12 @@ namespace server.Models
 {
     public class Response
     {
-        public class CreateRoomResponse
+        public class RoomUserResponse
         {
-            [JsonPropertyName("roomId")]
-            public required string RoomId { get; set; }
-            [JsonPropertyName("userId")]
-            public Guid UserId { get; set; }
+            [JsonPropertyName("room")]
+            public required Room Room { get; set; }
+            [JsonPropertyName("user")]
+            public required User User { get; set; }
         }
     }
 }

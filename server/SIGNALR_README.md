@@ -50,8 +50,8 @@
   - `timeLimitSec`: number (時間限制，單位秒)
 - **回傳事件**:
   - `RoomCreated`:
-    - 參數: `roomId`: string
-    - 參數: `userId`: string
+    - 參數: `room`: Room
+    - 參數: `user`: User
   - `RoomCreatedFailed`:
     - 參數: `errorMessage`: string
 
@@ -65,9 +65,8 @@
   - `userName`: string
 - **回傳事件**:
   - `GameJoined`:
-    - 參數:
-      - `roomId`: string
-      - `user`: User object
+    - 參數: `room`: Room
+    - 參數: `user`: User
   - `GameJoinFailed`:
     - 參數:
       - `errorMessage`: string

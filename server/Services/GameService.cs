@@ -1,4 +1,4 @@
-﻿using Humanizer;
+using Humanizer;
 using Microsoft.AspNetCore.SignalR;
 using server.Models;
 using System.Text.Json;
@@ -58,32 +58,39 @@ namespace server.Services
 
             await groups.AddToGroupAsync(context.ConnectionId, room.RoomId);
 
-            CreateRoomResponse response = new()
+            RoomUserResponse response = new()
             {
-                RoomId = room.RoomId,
-                UserId = user.UserId,
+                Room = room,
+                User = user,
             };
 
             await caller.SendAsync("RoomCreated", response);
         }
 
-        public async Task HandleJoinRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string roomId, string userName)
+        public async Task HandleJoinRoom(HubCallerContext context, IHubCallerClients clients, IClientProxy caller, IGroupManager groups, string roomId, string userName)
         {
-            User user = await _userService.CreateUser(userName);
-            Room room = await _roomService.JoinRoom(roomId, user);
-
-            // update roomId
-            user.RoomId = room.RoomId;
-            await _userService.UpdateUser(user);
-
-            var response = new
+            try
             {
-                roomId = roomId,
-                user = user
-            };
+                User user = await _userService.CreateUser(userName);
+                Room room = await _roomService.JoinRoom(roomId, user);
 
-            await groups.AddToGroupAsync(context.ConnectionId, roomId);
-            await caller.SendAsync("GameJoined", response);
+                // update roomId
+                user.RoomId = room.RoomId;
+                await _userService.UpdateUser(user);
+
+                RoomUserResponse response = new()
+                {
+                    Room = room,
+                    User = user
+                };
+
+                await groups.AddToGroupAsync(context.ConnectionId, roomId);
+                await clients.Group(roomId).SendAsync("GameJoined", response);
+            }
+            catch (Exception ex)
+            {
+                await caller.SendAsync("JoinRoomFailed", ex.Message);
+            }
         }
 
         public async Task HandleStartGame(IHubCallerClients clients, string roomId, string userId)
