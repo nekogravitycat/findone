@@ -71,6 +71,7 @@ namespace server.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in HandleJoinRoom: {ex}"); // Log the exception
                 await caller.SendAsync("RoomCreateFailed", ex.Message);
             }
         }
@@ -97,6 +98,7 @@ namespace server.Services
             }
             catch (Exception ex)
             {
+                Console.Error.WriteLine($"Error in HandleJoinRoom: {ex.Message}\n{ex.StackTrace}");
                 await caller.SendAsync("JoinRoomFailed", ex.Message);
             }
         }
