@@ -21,9 +21,9 @@
 - **參數**:
   - `userId`: string
 - **回傳事件**:
-  - `UserFound`:
+  - `UserFound:[userId]`:
     - 參數: `user`: User object
-  - `UserNotFound`:
+  - `UserNotFound:[userId]`:
     - 參數: `userId`: string
     - 參數: `errorMessage`: string
 
