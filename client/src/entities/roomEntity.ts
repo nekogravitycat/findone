@@ -31,7 +31,7 @@ export interface RoomCreateResultEntity {
 }
 
 export interface RoomJoinResultEntity {
-  roomId: string
+  room: RoomEntity
   user: UserEntity
 }
 

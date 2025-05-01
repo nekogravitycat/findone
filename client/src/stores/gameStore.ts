@@ -18,17 +18,11 @@ export async function updateRoomInfo(roomId: string) {
   // Get room info from the server
   game.room = await game.api.getRoom(roomId)
   // Update the users cache
-  for (const usrId of game.room.userIds) {
-    try {
-      console.log("Fetching user:", usrId)
-      const user = await game.api.getUser(usrId)
-      console.log(`User fetched: ${usrId} - ${user.userId}`)
-      if (user) {
-        game.usersCache.set(usrId, user)
-      }
-    } catch (error) {
-      console.error("Error fetching user:", error)
+  game.room.userIds.forEach(async (usrId) => {
+    const user = await game.api.getUser(usrId)
+    if (user) {
+      game.usersCache.set(usrId, user)
     }
-  }
+  })
   return game.room
 }

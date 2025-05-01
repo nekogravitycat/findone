@@ -12,7 +12,7 @@ const joinRoomId = ref("")
 async function createRoom() {
   try {
     let res = await game.api.createRoom(name.value, 5, 100)
-    console.log(`Room created: room=${res.roomId}, user=${res.user}`)
+    console.log(`Room created: room=${res.room}, user=${res.user}`)
     toRoomLobby(res)
   } catch (e) {
     console.error(e)
@@ -23,7 +23,7 @@ async function createRoom() {
 async function joinRoom() {
   try {
     let res = await game.api.joinRoom(joinRoomId.value, name.value)
-    console.log(`Room joined: room=${res.roomId}, user=${res.user}`)
+    console.log(`Room joined: room=${res.room}, user=${res.user}`)
     toRoomLobby(res)
   } catch (e) {
     console.error(e)
@@ -32,7 +32,7 @@ async function joinRoom() {
 }
 
 async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
-  game.room = await game.api.getRoom(roomJoinResult.roomId)
+  game.room = roomJoinResult.room
   game.userId = roomJoinResult.user.userId
   game.usersCache.set(game.userId, roomJoinResult.user)
   router.push({ name: "lobby" })
