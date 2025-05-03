@@ -99,7 +99,12 @@ export class SignalRService {
   // API methods
 
   public async getUser(userId: string) {
-    return this.invokeWithResponse<UserEntity>("GetUser", `UserFound:${userId}`, `UserNotFound:${userId}`, userId)
+    return this.invokeWithResponse<UserEntity>(
+      "GetUser",
+      `UserFound:${userId}`,
+      `UserNotFound:${userId}`,
+      userId
+    )
   }
 
   public async getRoom(roomId: string) {

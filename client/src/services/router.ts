@@ -1,4 +1,5 @@
 import EntryView from "@/views/EntryView.vue"
+import RoomLobbyView from "@/views/RoomLobbyView.vue"
 import { createRouter, createWebHistory } from "vue-router"
 
 const router = createRouter({
@@ -8,6 +9,11 @@ const router = createRouter({
       path: "/",
       name: "entry",
       component: EntryView,
+    },
+    {
+      path: "/lobby",
+      name: "lobby",
+      component: RoomLobbyView,
     },
   ],
 })
