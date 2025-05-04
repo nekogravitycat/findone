@@ -10,7 +10,7 @@ export interface RoomEntity {
   endTime?: Date
   status: RoomStatus
   targets: RoomTargetEntity[]
-  userIds: Set<string>
+  userIds: string[]
   roomSubmits: RoomSubmitEntity[][]
 }
 

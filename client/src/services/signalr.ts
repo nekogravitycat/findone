@@ -108,7 +108,7 @@ export class SignalRService {
   }
 
   public async getRoom(roomId: string) {
-    return this.invokeWithResponse<RoomEntity>("GetRoom", `RoomFound:${roomId}`, `RoomNotFound:${roomId}`, roomId)
+    return this.invokeWithResponse<RoomEntity>("GetRoom", `RoomFound`, `RoomNotFound`, roomId)
   }
 
   public async createRoom(userName: string, round: number, timeLimitSec: number) {
@@ -182,5 +182,23 @@ export class SignalRService {
     }
 
     this.connection.on(eventName, handler)
+  }
+
+  // Listen to a SignalR event, no auto-unsubscribe
+  public onEvent<T = void>(eventName: string, callback: (data: T) => void) {
+    if (!this.connection) {
+      return
+    }
+
+    this.connection.on(eventName, callback)
+  }
+
+  // Unsubscribe from a SignalR event
+  public offEvent(eventName: string, callback: (data: any) => void) {
+    if (!this.connection) {
+      return
+    }
+
+    this.connection.off(eventName, callback)
   }
 }
