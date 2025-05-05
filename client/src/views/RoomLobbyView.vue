@@ -2,7 +2,7 @@
 import type { UserEntity } from "@/entities/userEntity"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { onMounted, ref } from "vue"
+import { onMounted, onUnmounted, ref } from "vue"
 
 const game = useGameStore()
 const players = ref<UserEntity[]>([])
@@ -35,7 +35,7 @@ async function startGame() {
     return
   }
   try {
-    await game.api.startGame(game.room.roomId, game.userId)
+    await game.api.gameStartInvoke(game.room.roomId, game.userId)
     console.log("Game started successfully")
   } catch (error) {
     console.error("Failed to start game:", error)
@@ -49,7 +49,11 @@ function toGameRound() {
 onMounted(() => {
   updateRoom()
   game.api.onEvent("GameJoined", updateRoom)
-  game.api.onEvent("GameStarted", toGameRound)
+  game.api.onGameStart(toGameRound)
+})
+
+onUnmounted(() => {
+  game.api.offEvent("GameJoined", updateRoom)
 })
 </script>
 

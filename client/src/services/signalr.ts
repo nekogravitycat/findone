@@ -76,7 +76,9 @@ export class SignalRService {
 
       const failureHandler = (error: any) => {
         cleanup()
-        reject(typeof error === "string" ? new Error(error) : error)
+        const errorMessage = error as { errorMessage?: string }
+        const normalizedError = new Error(errorMessage.errorMessage || error.toString())
+        reject(normalizedError)
       }
 
       this.connection!.on(successEvent, successHandler)
@@ -93,6 +95,45 @@ export class SignalRService {
         cleanup()
         reject(err)
       })
+    })
+  }
+
+  // General onEvent method with success and failure events and optional callbacks
+  private onEventOnceWithResult<T = any>(
+    successEvent: string,
+    failureEvent: string,
+    onSuccess?: (data: T) => void,
+    onFailure?: (error: Error) => void
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      if (!this.connection) {
+        const err = new Error("SignalR connection is not established")
+        onFailure?.(err)
+        reject(err)
+        return
+      }
+
+      const cleanup = () => {
+        this.connection?.off(successEvent, successHandler)
+        this.connection?.off(failureEvent, failureHandler)
+      }
+
+      const successHandler = (data: T) => {
+        cleanup()
+        onSuccess?.(data)
+        resolve(data)
+      }
+
+      const failureHandler = (data: T) => {
+        cleanup()
+        const errorMessage = data as { errorMessage?: string }
+        const normalizedError = new Error(errorMessage.errorMessage || "An unknown error occurred")
+        onFailure?.(normalizedError)
+        reject(normalizedError)
+      }
+
+      this.connection.on(successEvent, successHandler)
+      this.connection.on(failureEvent, failureHandler)
     })
   }
 
@@ -130,6 +171,7 @@ export class SignalRService {
     )
   }
 
+  /*
   // Only for game host to call, all players will receive the info
   public async startGame(roomId: string, userId: string) {
     return this.invokeWithResponse<null>(
@@ -139,7 +181,29 @@ export class SignalRService {
       ...[roomId, userId]
     )
   }
+  */
 
+  // Only for game host to call, all players will receive the info
+  // Invoke GameStart without waiting for response
+  public async gameStartInvoke(roomId: string, userId: string) {
+    if (!this.connection) {
+      return
+    }
+
+    this.connection.invoke("GameStart", roomId, userId).catch((err) => {
+      console.error("Error starting game:", err)
+    })
+  }
+
+  // Listen to game start event, automatically unsubscribe
+  public onGameStart(callback: () => any) {
+    if (!this.connection) {
+      return
+    }
+    this.onEventOnceWithResult("GameStarted", "GameStartFailed", callback)
+  }
+
+  /*
   // Only for game host to call, all players will receive the info
   public async getRound(roomId: string, userId: string, roundIndex: number) {
     return this.invokeWithResponse<RoundEntity>(
@@ -149,7 +213,28 @@ export class SignalRService {
       ...[roomId, userId, roundIndex]
     )
   }
+  */
 
+  // Only for game host to call, all players will receive the info
+  // Invoke getRound without waiting for response
+  public async getRoundInvoke(roomId: string, userId: string, roundIndex: number) {
+    if (!this.connection) {
+      return
+    }
+    this.connection.invoke("GetRound", roomId, userId, roundIndex).catch((err) => {
+      console.error("Error getting round:", err)
+    })
+  }
+
+  // Listen to round info event, automatically unsubscribe
+  public onRoundInfo(callback: (roundInfo: RoundEntity) => any) {
+    if (!this.connection) {
+      return
+    }
+    this.onEventOnceWithResult("RoundInfo", "RoundInfoFailed", callback)
+  }
+
+  /*
   // Only for game host to call, all players will receive the info
   public async getRank(roomId: string, userId: string) {
     return this.invokeWithResponse<ScoreEntity[]>(
@@ -159,15 +244,52 @@ export class SignalRService {
       ...[roomId, userId]
     )
   }
+  */
+
+  // Only for game host to call, all players will receive the info
+  // Invoke getRank without waiting for response
+  public async getRankInvoke(roomId: string, userId: string) {
+    if (!this.connection) {
+      return
+    }
+    this.connection.invoke("GetRank", roomId, userId).catch((err) => {
+      console.error("Error getting rank:", err)
+    })
+  }
+
+  // Listen to rank info event, automatically unsubscribe
+  public onRankInfo(callback: (scores: ScoreEntity[]) => any) {
+    if (!this.connection) {
+      return
+    }
+    this.onEventOnceWithResult("RankInfo", "RankFailed", callback)
+  }
 
   // Image size limit: 5MB
-  public async submitImage(userId: string, base64Image: string) {
-    return this.invokeWithResponse<null>(
-      "SubmitImage",
-      "ImageAnalysisSuccessed",
-      "ImageAnalysisFailed",
-      ...[userId, base64Image]
-    )
+  // return true if the image is valid, false otherwise
+  public async submitImage(roomId: string, userId: string, base64Image: string) {
+    const maxSizeBytes = 5 * 1024 * 1024 // 5MB
+
+    const base64Length = base64Image.length
+    const byteLength =
+      Math.floor((base64Length * 3) / 4) -
+      (base64Image.endsWith("==") ? 2 : base64Image.endsWith("=") ? 1 : 0)
+
+    if (byteLength > maxSizeBytes) {
+      throw new Error("Image exceeds 5MB size limit.")
+    }
+
+    try {
+      await this.invokeWithResponse<null>(
+        "SubmitImage",
+        "ImageAnalysisSucceeded",
+        "ImageAnalysisFailed",
+        ...[roomId, userId, base64Image]
+      )
+      return true
+    } catch (err) {
+      return false
+    }
   }
 
   // Listen to a SignalR event once, then automatically unsubscribe
