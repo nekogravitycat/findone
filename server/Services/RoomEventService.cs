@@ -52,7 +52,7 @@ namespace server.Services
                         // Process the image submission
                         await _imageService.SubmitImage(roomId, userId, base64Image, submitTime);
 
-                        await _hubContext.Clients.Client(connectionId).SendAsync("ImageAnalysisSuccessed");
+                        await _hubContext.Clients.Client(connectionId).SendAsync("ImageAnalysisSucceeded");
                     }
                     catch (Exception ex)
                     {
