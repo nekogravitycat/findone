@@ -171,18 +171,6 @@ export class SignalRService {
     )
   }
 
-  /*
-  // Only for game host to call, all players will receive the info
-  public async startGame(roomId: string, userId: string) {
-    return this.invokeWithResponse<null>(
-      "GameStart",
-      "GameStarted",
-      "GameStartFailed",
-      ...[roomId, userId]
-    )
-  }
-  */
-
   // Only for game host to call, all players will receive the info
   // Invoke GameStart without waiting for response
   public async gameStartInvoke(roomId: string, userId: string) {
@@ -203,18 +191,6 @@ export class SignalRService {
     this.onEventOnceWithResult("GameStarted", "GameStartFailed", callback)
   }
 
-  /*
-  // Only for game host to call, all players will receive the info
-  public async getRound(roomId: string, userId: string, roundIndex: number) {
-    return this.invokeWithResponse<RoundEntity>(
-      "GetRound",
-      "RoundInfo",
-      "RoundInfoFailed",
-      ...[roomId, userId, roundIndex]
-    )
-  }
-  */
-
   // Only for game host to call, all players will receive the info
   // Invoke getRound without waiting for response
   public async getRoundInvoke(roomId: string, userId: string, roundIndex: number) {
@@ -233,18 +209,6 @@ export class SignalRService {
     }
     this.onEventOnceWithResult("RoundInfo", "RoundInfoFailed", callback)
   }
-
-  /*
-  // Only for game host to call, all players will receive the info
-  public async getRank(roomId: string, userId: string) {
-    return this.invokeWithResponse<ScoreEntity[]>(
-      "GetRank",
-      "RankInfo",
-      "RankFailed",
-      ...[roomId, userId]
-    )
-  }
-  */
 
   // Only for game host to call, all players will receive the info
   // Invoke getRank without waiting for response

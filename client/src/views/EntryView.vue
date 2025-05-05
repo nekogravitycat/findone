@@ -11,7 +11,7 @@ const joinRoomId = ref("")
 
 async function createRoom() {
   try {
-    let res = await game.api.createRoom(name.value, 5, 10)
+    let res = await game.api.createRoom(name.value, 5, 50)
     console.log(`Room created: room=${res.room}, user=${res.user}`)
     toRoomLobby(res)
   } catch (e) {

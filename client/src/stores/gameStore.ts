@@ -1,5 +1,6 @@
 import type { RoomEntity } from "@/entities/roomEntity"
 import type { RoundEntity } from "@/entities/roundEntity"
+import type { ScoreEntity } from "@/entities/scoreEntity"
 import { SignalRService } from "@/services/signalr"
 import { defineStore } from "pinia"
 import { computed, ref } from "vue"
@@ -9,7 +10,8 @@ export const useGameStore = defineStore("game", () => {
   const room = ref<RoomEntity | null>(null)
   const round = ref<RoundEntity | null>(null)
   const userId = ref<string | null>(null)
+  const scores = ref<ScoreEntity[]>([])
   const isHost = computed(() => room.value?.hostUserId === userId.value)
 
-  return { api, room, round, userId, isHost }
+  return { api, room, round, userId, scores, isHost }
 })
