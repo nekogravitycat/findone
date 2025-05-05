@@ -132,6 +132,7 @@
 
 - **方法名稱**: `SubmitImage`
 - **參數**:
+  - `roomId`: string
   - `userId`: string
   - `base64Image`: string
 - **回傳事件**:

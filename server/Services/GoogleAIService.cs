@@ -24,14 +24,14 @@ namespace server.Services
         {
           ""type"": ""object"",
           ""properties"": {
-            ""Match"": {
+            ""match"": {
               ""type"": ""boolean""
             },
-            ""Comment"": {
+            ""comment"": {
               ""type"": ""string""
             }
           },
-          ""required"": [""Match"", ""Comment""]
+          ""required"": [""match"", ""comment""]
         }";
 
         public GoogleAIService(IConfiguration configuration)
