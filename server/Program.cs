@@ -34,6 +34,7 @@ builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<ScoreService>();
 builder.Services.AddHostedService<RoomEventService>();
 builder.Services.AddSingleton<RoomEventService>();
+builder.Services.AddSingleton<ConnectService>();
 
 // Add Controllers & Swagger
 builder.Services.AddControllers();

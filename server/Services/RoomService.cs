@@ -35,6 +35,7 @@ public class RoomService
                 TargetName = t,
             }).ToList(),
             UserIds = new HashSet<Guid> { hostUser.UserId },
+            UserConnections = new HashSet<string> { hostUser.ConnectionId },
             Status = RoomStatus.Waiting
         };
 
@@ -57,7 +58,8 @@ public class RoomService
             throw new Exception("Room is already finished");
 
         room.UserIds.Add(user.UserId);
-
+        room.UserConnections.Add(user.ConnectionId);
+        
         await UpdateRoom(room);
 
         return room;

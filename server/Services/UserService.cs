@@ -1,7 +1,6 @@
 ﻿using server.Models;
 using System.Text.Json;
 using StackExchange.Redis;
-using Microsoft.AspNetCore.Identity;
 
 public class UserService
 {
@@ -11,21 +10,28 @@ public class UserService
     {
         _redis = redis;
     }
-    public async Task<User> CreateUser(string userName)
+    public async Task<User> CreateUser(string userName, string connectionId)
     {
-        User user = new User { UserName = userName };
+        User user = new User { UserName = userName, ConnectionId = connectionId };
         await UpdateUser(user);
         return user;
     }
 
-    public async Task<User> CreateUser(string userName, string roomId)
+    public async Task<User> CreateUser(string userName, string roomId, string connectionId)
     {
         User user = new User { 
             UserName = userName, 
-            RoomId = roomId
+            RoomId = roomId,
+            ConnectionId = connectionId
         };
         await UpdateUser(user);
         return user;
+    }
+
+    public async Task<bool> DeleteUser(string userId)
+    {
+        IDatabase db = _redis.GetDatabase();
+        return await db.KeyDeleteAsync($"user:{userId}");
     }
 
     public async Task<User> AddScore(UserScore userScore)

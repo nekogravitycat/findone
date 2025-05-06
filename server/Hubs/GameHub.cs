@@ -38,5 +38,8 @@ namespace server.Hubs
 
         public async Task SendMessage(string user, string message)
             => await Clients.All.SendAsync("ReceiveMessage", user, message);
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+            => await _gameService.HandleUserDisconnected(Clients, Context.ConnectionId);
     }
 }

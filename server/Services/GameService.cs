@@ -1,7 +1,6 @@
 using Humanizer;
 using Microsoft.AspNetCore.SignalR;
 using server.Models;
-using System.Text.Json;
 using static server.Models.Response;
 
 namespace server.Services
@@ -12,12 +11,14 @@ namespace server.Services
         private readonly RoomService _roomService;
         private readonly RoomEventService _roomEventService;
         private readonly UserService _userService;
+        private readonly ConnectService _connectService;
 
-        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService)
+        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService, ConnectService connectService)
         {
             _roomService = roomService;
             _roomEventService = roomEventService;
             _userService = userService;
+            _connectService = connectService;
         }
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
@@ -54,8 +55,9 @@ namespace server.Services
             try
             {
 
-            User user = await _userService.CreateUser(userName);
+            User user = await _userService.CreateUser(userName, context.ConnectionId);
             Room room = await _roomService.CreateRoom(user, round, timeLimit);
+            await _connectService.CreateConnection(context.ConnectionId, user.UserId.ToString(), room.RoomId);
 
             user.RoomId = room.RoomId;
 
@@ -82,8 +84,9 @@ namespace server.Services
         {
             try
             {
-                User user = await _userService.CreateUser(userName);
+                User user = await _userService.CreateUser(userName, context.ConnectionId);
                 Room room = await _roomService.JoinRoom(roomId, user);
+                await _connectService.CreateConnection(context.ConnectionId, user.UserId.ToString(), room.RoomId);
 
                 // update roomId
                 user.RoomId = room.RoomId;
@@ -245,6 +248,36 @@ namespace server.Services
                 await clients.Caller.SendAsync("RankFailed", ex.Message);
             }
         }
-    
+
+        public async Task HandleUserDisconnected(IHubCallerClients clients, string connectionId){
+            try {
+                Connection? connection = await _connectService.GetUserIdFromConnectionId(connectionId);
+                
+                if(connection == null)
+                    return;
+                
+                // get user from connection
+                User user = await _userService.GetUser(connection.UserId);
+
+                // delete connection
+                await _connectService.DeleteConnection(connectionId);
+
+                // delete user
+                await _userService.DeleteUser(user.UserId.ToString());
+
+                // update room record
+                Room room = await _roomService.GetRoom(user.RoomId);
+                room.UserIds.Remove(user.UserId);
+                room.UserConnections.Remove(connectionId);
+                await _roomService.UpdateRoom(room);
+
+                // send updated room to all users
+                await clients.Group(room.RoomId).SendAsync("UserDisconnected", room);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("UserDisconnectedFailed", ex.Message);
+            }
+        }
     }
 }
