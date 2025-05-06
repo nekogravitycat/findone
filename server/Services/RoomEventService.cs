@@ -8,14 +8,18 @@ namespace server.Services
     public class RoomEventService : BackgroundService
     {
         private readonly IDatabase _db;
+        private readonly GameService _gameService;
         private readonly ImageService _imageService;
+        private readonly RoomService _roomService;
         private readonly IHubContext<GameHub> _hubContext;
         private const string StreamKey = "room:submit:stream";
 
-        public RoomEventService(ImageService imageService, UserService userService, IConnectionMultiplexer redis, IHubContext<GameHub> hubContext)
+        public RoomEventService(ImageService imageService, RoomService roomService, GameService gameService, IConnectionMultiplexer redis, IHubContext<GameHub> hubContext)
         {
             _db = redis.GetDatabase();
             _imageService = imageService;
+            _roomService = roomService;
+            _gameService = gameService;
             _hubContext = hubContext;
         }
 
@@ -52,7 +56,16 @@ namespace server.Services
                         // Process the image submission
                         await _imageService.SubmitImage(roomId, userId, base64Image, submitTime);
 
+                        // send message to user
                         await _hubContext.Clients.Client(connectionId).SendAsync("ImageAnalysisSucceeded");
+
+                        Room room = await _roomService.GetRoom(roomId);
+                        
+                        // check if all users have submitted
+                        if(room.UserIds.Count == room.UserConnections.Count) {
+                            List<Score> scores = await _gameService.GetRankInfo(roomId, userId);
+                            await _hubContext.Clients.Group(roomId).SendAsync("RankInfo", scores);
+                        }
                     }
                     catch (Exception ex)
                     {
