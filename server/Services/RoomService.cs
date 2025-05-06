@@ -59,7 +59,7 @@ public class RoomService
 
         room.UserIds.Add(user.UserId);
         room.UserConnections.Add(user.ConnectionId);
-        
+
         await UpdateRoom(room);
 
         return room;
@@ -88,6 +88,14 @@ public class RoomService
         await UpdateRoom(room);
         return room;
     }
+
+    public async Task RemoveUserFromRoom(Room room, User user, string connectionId) {
+        room.UserIds.Remove(user.UserId);
+        room.UserConnections.Remove(connectionId);
+
+        await UpdateRoom(room);
+    }
+
     public async Task<Room> GetRoom(string roomId)
     {
         IDatabase db = _redis.GetDatabase();
@@ -98,6 +106,7 @@ public class RoomService
 
         return JsonSerializer.Deserialize<Room>(json!)!;
     }
+
     public async Task<Room?> UpdateRoom(Room room)
     {
         IDatabase db = _redis.GetDatabase();

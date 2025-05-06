@@ -267,9 +267,7 @@ namespace server.Services
 
                 // update room record
                 Room room = await _roomService.GetRoom(user.RoomId);
-                room.UserIds.Remove(user.UserId);
-                room.UserConnections.Remove(connectionId);
-                await _roomService.UpdateRoom(room);
+                await _roomService.RemoveUserFromRoom(room, user, connectionId);
 
                 // send updated room to all users
                 await clients.Group(room.RoomId).SendAsync("UserDisconnected", room);
