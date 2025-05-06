@@ -89,10 +89,6 @@ async function submitImage(image: string) {
   }
 }
 
-function goRankView() {
-  router.push({ name: "rank" })
-}
-
 onMounted(async () => {
   if (game.isHost) {
     invokeGetRound()
@@ -106,7 +102,9 @@ onMounted(async () => {
     }
   })
   game.api.onRankInfo((scores: ScoreEntity[]) => {
-    goRankView()
+    game.scores = scores
+    console.log("Scores updated:", scores)
+    router.push({ name: "rank" })
   })
 })
 
