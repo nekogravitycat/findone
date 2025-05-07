@@ -28,13 +28,14 @@ builder.Services.AddSignalR(options =>
 // Register services
 builder.Services.AddSingleton<ImageService>();
 builder.Services.AddSingleton<GoogleAIService>();
-builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomService>();
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<ScoreService>();
-builder.Services.AddHostedService<RoomEventService>();
-builder.Services.AddSingleton<RoomEventService>();
 builder.Services.AddSingleton<ConnectService>();
+builder.Services.AddSingleton<RankService>();
+builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<RoomEventService>();
+builder.Services.AddHostedService<RoomEventService>();
 
 // Add Controllers & Swagger
 builder.Services.AddControllers();
