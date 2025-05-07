@@ -41,6 +41,9 @@ namespace server.Models
     [JsonPropertyName("userIds")]
     public HashSet<Guid> UserIds { get; set; } = new HashSet<Guid>();
 
+    [JsonPropertyName("userConnections")]
+    public HashSet<string> UserConnections { get; set; } = new HashSet<string>();
+
     [JsonPropertyName("roomSubmits")]
     public List<List<RoomSubmit>> RoomSubmits { get; set; } =
       Enumerable.Range(0, 5).Select(_ => new List<RoomSubmit>()).ToList();

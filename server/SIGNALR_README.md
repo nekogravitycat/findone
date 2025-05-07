@@ -142,6 +142,20 @@
     - 參數:
       - `errorMessage`: string
 
+### 4. 連線相關
+
+#### 使用者斷開連接
+
+> 僅適用於已加入房間之使用者
+
+- **如何觸發**: 當已加入房間之使用者斷開連接，會自動發送訊息給房間內其他人
+- **回傳事件**:
+  - `UserDisconnected`:
+    - 參數: `room`: Room
+  - `UserDisconnectedFailed`:
+    - 參數:
+      - `errorMessage`: string
+
 ---
 
 ## 注意事項
