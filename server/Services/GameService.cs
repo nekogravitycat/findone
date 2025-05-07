@@ -26,11 +26,12 @@ namespace server.Services
             {
                 User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
 
-                await caller.SendAsync("UserFound", user);
+                await caller.SendAsync($"UserFound:{userId}", user);
             }
             catch (Exception ex)
             {
-                await caller.SendAsync("UserNotFound", userId, ex.Message);
+                Console.WriteLine(ex.Message);
+                await caller.SendAsync($"UserNotFound:{userId}", userId, ex.Message);
             }
         }
 
@@ -43,6 +44,7 @@ namespace server.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 await caller.SendAsync("RoomNotFound", roomId, ex.Message);
             }
         }
