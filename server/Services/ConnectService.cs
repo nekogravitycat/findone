@@ -28,14 +28,6 @@ public class ConnectService
         return JsonSerializer.Deserialize<Connection>(connection!) ?? null;
     }
 
-    public async Task<Connection?> GetRoomIdFromConnectionId(string connectionId){
-        RedisValue connection = await _redis.GetDatabase().StringGetAsync(connectionId);
-        if (connection.IsNullOrEmpty)
-            return null;
-
-        return JsonSerializer.Deserialize<Connection>(connection!) ?? null;
-    }
-
     public async Task DeleteConnection(string connectionId){
         await _redis.GetDatabase().KeyDeleteAsync(connectionId);
     }

@@ -43,7 +43,8 @@ namespace server.Services
 
                 if (entries.Length == 0)
                 {
-                    // no new messages, check pending
+                    // No new messages are available in the stream. Check for pending messages that were not acknowledged
+                    // by any consumer. This ensures that unprocessed messages are not left in the stream indefinitely.
                     var pending = await _db.StreamPendingMessagesAsync(StreamKey, "room:submit:group", 10, "consumer-1");
 
                     foreach (var pendingMessage in pending)
