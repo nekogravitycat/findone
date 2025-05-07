@@ -7,49 +7,65 @@ import { onMounted, onUnmounted, ref } from "vue"
 const game = useGameStore()
 const players = ref<UserEntity[]>([])
 
-async function updateRoom() {
+// Helpers
+function ensureRoomAndUser(): boolean {
   if (!game.room?.roomId) {
-    console.error("Room ID is not available")
-    return
-  }
-  const room = await game.api.getRoom(game.room.roomId)
-  if (!room) {
-    console.error("Failed to fetch room data")
-    return
-  }
-  game.room = room
-  console.log("Room data updated:", room)
-  // Fetching user data for each userId in the room
-  const userPromises = game.room.userIds.map((userId) => game.api.getUser(userId))
-  const fetchedUsers = await Promise.all(userPromises)
-  players.value = fetchedUsers
-}
-
-async function startGame() {
-  if (!game.room?.roomId) {
-    console.error("Room ID is not available")
-    return
+    console.error("[Lobby] Missing room ID")
+    return false
   }
   if (!game.userId) {
-    console.error("User ID is not available")
+    console.error("[Lobby] Missing user ID")
+    return false
+  }
+  return true
+}
+
+// Fetch room & players
+async function updateRoom() {
+  if (!game.room?.roomId) {
+    console.error("[Lobby] Cannot update room: room ID is not available")
     return
   }
   try {
-    await game.api.gameStartInvoke(game.room.roomId, game.userId)
-    console.log("Game started successfully")
-  } catch (error) {
-    console.error("Failed to start game:", error)
+    const room = await game.api.getRoom(game.room.roomId)
+    if (!room) {
+      console.error("[Lobby] Failed to fetch room data")
+      return
+    }
+    game.room = room
+    console.log("[Lobby] Room data updated:", room)
+
+    const userPromises = room.userIds.map((id) => game.api.getUser(id))
+    const users = await Promise.all(userPromises)
+    players.value = users.filter((u): u is UserEntity => !!u)
+  } catch (err) {
+    console.error("[Lobby] Error while updating room:", err)
   }
 }
 
-function toGameRound() {
-  router.push({ name: "game" })
+// Only host can call this
+async function startGame() {
+  if (!ensureRoomAndUser()) return
+  try {
+    await game.api.gameStartInvoke(game.room!.roomId, game.userId!)
+    console.log("[Lobby] Game started by host")
+    game.api.getRoundInvoke(game.room!.roomId, game.userId!, game.room!.currentRound ?? 0)
+  } catch (error) {
+    console.error("[Lobby] Failed to start game:", error)
+  }
 }
 
+// Lifecycle hooks
 onMounted(() => {
   updateRoom()
   game.api.onEvent("GameJoined", updateRoom)
-  game.api.onGameStart(toGameRound)
+
+  // Go to game view when round info is received
+  game.api.onRoundInfo((info) => {
+    info.endTime = new Date(info.endTime)
+    game.round = info
+    router.push({ name: "game" })
+  })
 })
 
 onUnmounted(() => {

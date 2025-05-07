@@ -8,46 +8,51 @@ import { onMounted, onUnmounted, ref } from "vue"
 
 const game = useGameStore()
 const round = ref<RoundEntity | null>(null)
-
 const countdown = ref("")
+const showToast = ref<string | null>(null) // Toast message
+
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 
-function invokeGetRound() {
+// Helpers
+function ensureRoomAndUser(): boolean {
   if (!game.room?.roomId) {
-    console.error("Room ID is not available")
-    return
+    console.error("[Game] Missing room ID")
+    return false
   }
   if (!game.userId) {
-    console.error("User ID is not available")
-    return
+    console.error("[Game] Missing user ID")
+    return false
   }
-  game.api.getRoundInvoke(game.room.roomId, game.userId, game.room.currentRound ?? 0)
+  return true
 }
 
-function invokeGetRankOnTime(time: Date) {
+// Show a toast message to the user
+function showToastMessage(message: string) {
+  showToast.value = message
+  setTimeout(() => {
+    showToast.value = null // Hide toast after 3 seconds
+  }, 3000)
+}
+
+// Get rank after round ends (host only)
+function invokeGetRankOnTime(endTime: Date) {
+  if (!ensureRoomAndUser()) return
+
+  const delay = endTime.getTime() - Date.now()
+
   const getRank = () => {
-    if (!game.room?.roomId) {
-      console.error("Room ID is not available")
-      return
-    }
-    if (!game.userId) {
-      console.error("User ID is not available")
-      return
-    }
-    game.api.getRankInvoke(game.room?.roomId, game.userId)
+    game.api.getRankInvoke(game.room!.roomId, game.userId!)
+    console.log("[Game] getRank invoked")
   }
 
-  const delay = time.getTime() - Date.now()
-
   if (delay <= 0) {
-    // If the time is already passed, call getRank immediately
     getRank()
   } else {
-    // If the time is in the future, set a timeout to call getRank
     setTimeout(getRank, delay)
   }
 }
 
+// Countdown display
 function startCountdown(targetTime: Date) {
   if (countdownInterval) {
     clearInterval(countdownInterval)
@@ -66,45 +71,54 @@ function startCountdown(targetTime: Date) {
   }
 
   updateCountdown()
-  countdownInterval = setInterval(updateCountdown, 1000)
+  countdownInterval = setInterval(updateCountdown, 500)
 }
 
-async function submitImage(image: string) {
-  if (!game.room?.roomId) {
-    console.error("Room ID is not available")
-    return
-  }
-  if (!game.userId) {
-    console.error("Room ID is not available")
-    return
-  }
+// Player submits image
+async function submitImage(image: string): Promise<void> {
+  if (!ensureRoomAndUser()) return
+
   try {
-    const result = await game.api.submitImage(game.room.roomId, game.userId, image)
+    const result = await game.api.submitImage(game.room!.roomId, game.userId!, image)
     if (!result) {
       throw new Error("Image analysis failed")
     }
-    console.log("Image submitted successfully")
+    console.log("[Game] Image submitted successfully")
+    // Show a toast message to the user
+    showToastMessage("Image submitted successfully!")
   } catch (error) {
-    console.error("Failed to submit image:", error)
+    console.error("[Game] Failed to submit image:", error)
   }
 }
 
-onMounted(async () => {
-  if (game.isHost) {
-    invokeGetRound()
+// Setup round info on enter
+function setupRound() {
+  round.value = game.round
+  if (!round.value) {
+    console.error("[Game] Round data is not available")
+    return
   }
-  game.api.onRoundInfo((info: RoundEntity) => {
-    info.endTime = new Date(info.endTime)
-    round.value = info
-    startCountdown(round.value.endTime)
-    if (game.isHost) {
-      invokeGetRankOnTime(round.value.endTime)
-    }
-  })
+
+  startCountdown(round.value.endTime)
+
+  if (game.isHost) {
+    invokeGetRankOnTime(round.value.endTime)
+  }
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  setupRound()
+
   game.api.onRankInfo((scores: ScoreEntity[]) => {
     game.scores = scores
-    console.log("Scores updated:", scores)
-    router.push({ name: "rank" })
+    console.log("[Game] Scores received:", scores)
+    // Check if the game is over
+    if ((game.room?.currentRound ?? 0) + 1 < (game.room?.round ?? 0)) {
+      router.push({ name: "rank" })
+    } else {
+      router.push({ name: "result" })
+    }
   })
 })
 
@@ -116,6 +130,12 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Round number -->
+  <div class="text-center">
+    <p class="mt-2 text-lg">
+      Round: {{ (game.room?.currentRound ?? 0) + 1 }} / {{ game.room?.round }}
+    </p>
+  </div>
   <!-- Game Objetive -->
   <div class="text-center">
     <h1 class="text-2xl font-bold">Game Objective:</h1>
@@ -136,5 +156,12 @@ onUnmounted(() => {
     >
       Get Rank Now
     </button>
+  </div>
+  <!-- Toast Notification -->
+  <div
+    v-if="showToast"
+    class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-md"
+  >
+    {{ showToast }}
   </div>
 </template>

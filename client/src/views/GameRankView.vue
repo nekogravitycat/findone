@@ -1,10 +1,26 @@
 <script setup lang="ts">
+import type { RoundEntity } from "@/entities/roundEntity"
 import { addBase64Prefix } from "@/lib/b64img"
+import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { computed } from "vue"
+import { computed, onMounted } from "vue"
 
 const game = useGameStore()
 
+// Helpers
+function ensureRoomAndUser(): boolean {
+  if (!game.room?.roomId) {
+    console.error("[Rank] Missing room ID")
+    return false
+  }
+  if (!game.userId) {
+    console.error("[Rank] Missing user ID")
+    return false
+  }
+  return true
+}
+
+// Sort scores by total, then by userName
 const sortedScores = computed(() => {
   return [...game.scores].sort((a, b) =>
     b.totalRoundScore !== a.totalRoundScore
@@ -13,18 +29,51 @@ const sortedScores = computed(() => {
   )
 })
 
-function getRankColor(idx: number) {
-  if (idx === 0) return "bg-yellow-400 text-yellow-900"
-  if (idx === 1) return "bg-gray-300 text-gray-900"
-  if (idx === 2) return "bg-yellow-700 text-yellow-100"
-  return "bg-slate-100 text-slate-800"
+// Host starts next round
+function toNextRound(): void {
+  if (!ensureRoomAndUser()) return
+
+  game.room!.currentRound = (game.room?.currentRound ?? 0) + 1
+  game.api.getRoundInvoke(game.room!.roomId, game.userId!, game.room!.currentRound)
 }
+
+// Rank badge color based on index
+function getRankColor(idx: number): string {
+  switch (idx) {
+    case 0:
+      return "bg-yellow-400 text-yellow-900"
+    case 1:
+      return "bg-gray-300 text-gray-900"
+    case 2:
+      return "bg-yellow-700 text-yellow-100"
+    default:
+      return "bg-slate-100 text-slate-800"
+  }
+}
+
+// Listen for next round data
+onMounted(() => {
+  game.api.onRoundInfo((info: RoundEntity) => {
+    info.endTime = new Date(info.endTime)
+    game.round = info
+    router.push({ name: "game" })
+  })
+})
 </script>
 
 <template>
   <div
     class="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col items-center px-2 py-6"
   >
+    <!-- Button to next round -->
+    <button
+      v-if="game.isHost"
+      @click="toNextRound"
+      class="mb-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
+    >
+      Next Round
+    </button>
+    <!-- Game Rankings -->
     <h1 class="text-xl font-bold mb-6 tracking-wide text-blue-600">🏆 Game Rankings</h1>
     <div class="w-full max-w-md space-y-3">
       <template v-for="(score, idx) in sortedScores" :key="score.userId">
