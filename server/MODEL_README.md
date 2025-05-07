@@ -1,6 +1,19 @@
 
 ## Models
 
+### Connection 相關模型
+
+#### Connection
+
+```csharp
+public class Connection
+{
+    public required string ConnectionId { get; set; }
+    public required string UserId { get; set; }
+    public required string RoomId { get; set; }
+}
+```
+
 ### User 相關模型
 
 #### User
@@ -8,6 +21,7 @@
 public class User
 {
     public Guid UserId { get; set; } = Guid.NewGuid();
+    public required string ConnectionId { get; set; }
     public required string UserName { get; init; }
     public string RoomId { get; set; } = string.Empty;
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
@@ -57,6 +71,7 @@ public class Room
     public List<RoomTarget> Targets { get; set; } = new List<RoomTarget>();
     // relation to users
     public HashSet<Guid> UserIds { get; set; } = new HashSet<Guid>();
+    public HashSet<string> UserConnections { get; set; } = new HashSet<string>();
     // default : 5 rounds
     public List<List<RoomSubmit>> RoomSubmits { get; set; } =
         Enumerable.Range(0, 5).Select(_ => new List<RoomSubmit>()).ToList();
