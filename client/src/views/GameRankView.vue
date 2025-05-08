@@ -29,12 +29,27 @@ const sortedScores = computed(() => {
   )
 })
 
+// Determine if the game is over
+const isFinal = computed(() => {
+  return (game.room?.currentRound ?? 0) + 1 >= (game.room?.round ?? 0)
+})
+
 // Host starts next round
 function toNextRound(): void {
   if (!ensureRoomAndUser()) return
 
   game.room!.currentRound = (game.room?.currentRound ?? 0) + 1
   game.api.getRoundInvoke(game.room!.roomId, game.userId!, game.room!.currentRound)
+}
+
+// Game over - return to entry page
+function toEntry() {
+  // Clear game state
+  game.room = null
+  game.round = null
+  game.userId = null
+  game.scores = []
+  router.push({ name: "entry" })
 }
 
 // Rank badge color based on index
@@ -67,7 +82,7 @@ onMounted(() => {
   >
     <!-- Button to next round -->
     <button
-      v-if="game.isHost"
+      v-if="game.isHost && !isFinal"
       @click="toNextRound"
       class="mb-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
     >
@@ -122,6 +137,15 @@ onMounted(() => {
           </span>
         </div>
       </template>
+    </div>
+    <!-- Exit room -->
+    <div class="mt-6" v-if="isFinal">
+      <button
+        @click="toEntry"
+        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full shadow-lg transition"
+      >
+        Exit Room
+      </button>
     </div>
   </div>
 </template>

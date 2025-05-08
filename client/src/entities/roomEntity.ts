@@ -9,8 +9,11 @@ export interface RoomEntity {
   timeLimit: number
   endTime?: Date
   status: RoomStatus
+  // target items for identification
   targets: RoomTargetEntity[]
+  // relation to users
   userIds: string[]
+  userConnections: string[]
   roomSubmits: RoomSubmitEntity[][]
 }
 

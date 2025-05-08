@@ -113,12 +113,7 @@ onMounted(() => {
   game.api.onRankInfo((scores: ScoreEntity[]) => {
     game.scores = scores
     console.log("[Game] Scores received:", scores)
-    // Check if the game is over
-    if ((game.room?.currentRound ?? 0) + 1 < (game.room?.round ?? 0)) {
-      router.push({ name: "rank" })
-    } else {
-      router.push({ name: "result" })
-    }
+    router.push({ name: "rank" })
   })
 })
 

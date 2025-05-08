@@ -42,6 +42,15 @@ export class GameAPI extends SignalRService {
     )
   }
 
+  public onUserDisconnected(callback: (room: RoomEntity) => void, onError?: (err: Error) => void) {
+    this.onEventOnceWithResult<RoomEntity>(
+      "UserDisconnected",
+      "UserDisconnectedFailed",
+      callback,
+      onError
+    ).catch(() => {})
+  }
+
   /* ----------------------------- Game control ----------------------------- */
 
   // Host-only: fire-and-forget.
