@@ -1,45 +1,63 @@
-# FindOne 專案
+<div align="center">
+<img src="./client/src/assets/findone-readme.png" alt="Findone Logo" style="width: 100px; height: 100px; border-radius: 50px; margin-bottom: 20px;" />
+</div>
 
-## 專案簡介
-
-FindOne 是一個基於 ASP.NET Core 和 Redis 的即時互動應用程式，結合了影像分析技術和即時遊戲功能。本專案使用 SignalR 實現即時通訊，並利用 Redis 進行數據快取和訊息傳遞。
+FindOne 是一款基於 ASP.NET Core 和 Vue3 的即時互動遊戲 Web App，結合了影像分析技術和多人線上功能。本專案使用 Vue3 和 TailwindCSS 實現介面和美術、使用 SignalR 實現即時通訊，並利用 Redis 進行數據快取。
 
 ## 技術架構
 
+- **前端框架**: Vue3 + TypeScript
+- **UI 框架**: TailwindCSS
+- **狀態管理**: Pinia
 - **後端框架**: ASP.NET Core
 - **即時通訊**: SignalR
 - **快取與訊息佇列**: Redis
 - **容器化**: Docker & Docker Compose
+- **影像辨識技術**: Google Gemini API
 
 ## 專案結構
 
 ```
-├─server/
+├─client/                        # 前端 Vue3 專案
+│   ├─src/
+│   │   ├─assets/               # 靜態資源（圖片、樣式等）
+│   │   ├─components/           # Vue 元件
+│   │   ├─entities/             # TypeScript 型別定義
+│   │   ├─services/             # API 服務
+│   │   ├─stores/               # Pinia 狀態管理
+│   │   ├─views/                # 頁面元件
+│   │   ├─App.vue              # 根元件
+│   │   └─main.ts              # 入口文件
+│   ├─public/                   # 公共資源
+│   └─package.json             # 前端依賴配置
+│
+├─server/                       # 後端 ASP.NET Core 專案
 │   ├─Controllers/
-│   │   └─RedisController.cs      # Redis 快取控制器，提供基本的快取操作 API
+│   │   └─RedisController.cs    # Redis 快取控制器
 │   ├─Data/
-│   │   └─targets.txt            # 遊戲目標物清單檔案
+│   │   └─targets.txt          # 遊戲目標物清單
 │   ├─Hubs/
-│   │   └─GameHub.cs             # SignalR 遊戲中樞，處理即時通訊和遊戲邏輯
+│   │   └─GameHub.cs           # SignalR 遊戲中樞
 │   ├─Models/
-│   │   ├─Room.cs                # 房間模型，定義遊戲房間的結構和狀態
-│   │   ├─Image.cs               # 影像模型，處理影像相關的資料結構
-│   │   ├─Round.cs               # 回合模型，定義遊戲回合的結構
-│   │   ├─Score.cs               # 分數模型，處理玩家分數相關的資料結構
-│   │   └─User.cs                # 使用者模型，定義玩家資料結構
+│   │   ├─Room.cs              # 房間模型
+│   │   ├─Image.cs             # 影像模型
+│   │   ├─Round.cs             # 回合模型
+│   │   ├─Score.cs             # 分數模型
+│   │   └─User.cs              # 使用者模型
 │   ├─Services/
-│   │   ├─GameService.cs         # 遊戲服務，處理核心遊戲邏輯
-│   │   ├─GoogleAIService.cs     # Google AI 服務，整合 Google Gemini API 進行影像分析
-│   │   ├─ImageService.cs        # 影像服務，處理影像分析和處理
-│   │   ├─RoomService.cs         # 房間服務，管理遊戲房間的狀態和操作
-│   │   ├─UserService.cs         # 使用者服務，處理玩家資料的管理
-│   │   └─ScoreService.cs        # 分數服務，計算和管理玩家分數
-│   ├─Models/
-│       ├─IdGenerator.cs         # ID 生成器，用於生成唯一識別碼
-│       └─ImageHelper.cs         # 影像輔助工具，處理影像格式轉換和驗證
-├─Dockerfile                     # Docker 容器設定檔
-├─docker-compose.yml             # Docker Compose 設定檔，定義服務編排
-└─.dockerignore                  # Docker 忽略檔案設定
+│   │   ├─GameService.cs       # 遊戲服務
+│   │   ├─GoogleAIService.cs   # Google AI 服務
+│   │   ├─ImageService.cs      # 影像服務
+│   │   ├─RoomService.cs       # 房間服務
+│   │   ├─UserService.cs       # 使用者服務
+│   │   └─ScoreService.cs      # 分數服務
+│   └─Utils/
+│       ├─IdGenerator.cs       # ID 生成器
+│       └─ImageHelper.cs       # 影像輔助工具
+│
+├─Dockerfile                    # Docker 容器設定檔
+├─docker-compose.yml           # Docker Compose 設定檔
+└─.dockerignore               # Docker 忽略檔案設定
 ```
 
 ### 核心功能說明
@@ -48,11 +66,13 @@ FindOne 是一個基於 ASP.NET Core 和 Redis 的即時互動應用程式，結
 1. 玩家創建或加入遊戲房間
 2. 房主開始遊戲，系統隨機選擇目標物
 3. 玩家在限定時間內拍攝符合目標物的照片
-4. 系統使用 Google AI 分析照片是否符合目標
-5. 根據提交時間計算分數
-6. 顯示排行榜和遊戲結果
+4. 系統使用 Google Gemini API 分析照片是否符合目標
+5. 根據提交時間和準確度計算分數
+6. 即時顯示排行榜和遊戲結果
 
 #### 技術特點
+- 使用 Vue3 + TypeScript 開發現代化前端介面
+- 使用 TailwindCSS 實現響應式設計
 - 使用 SignalR 實現即時通訊
 - 整合 Google Gemini API 進行影像分析
 - 使用 Redis 進行資料快取和狀態管理
@@ -62,7 +82,8 @@ FindOne 是一個基於 ASP.NET Core 和 Redis 的即時互動應用程式，結
 ## 系統需求
 
 - Docker Desktop
-- .NET Core SDK (用於本地開發)
+- Node.js 18+ (前端開發)
+- .NET Core SDK 7.0+ (後端開發)
 
 ## How to Run?
 
@@ -76,6 +97,7 @@ FindOne 是一個基於 ASP.NET Core 和 Redis 的即時互動應用程式，結
    docker-compose up -d
    ```
 3. 服務將在以下端口運行：
+   - 前端: http://localhost:5173
    - 後端 API: ws://localhost:8080/gamehub
    - Redis: localhost:6379
 4. 關閉服務：
@@ -91,14 +113,17 @@ FindOne 是一個基於 ASP.NET Core 和 Redis 的即時互動應用程式，結
    cd findone
    ```
 
-2. 安裝依賴：
+2. 前端開發：
+   ```bash
+   cd client
+   pnpm install
+   pnpm dev
+   ```
+
+3. 後端開發：
    ```bash
    cd server
    dotnet restore
-   ```
-
-3. 運行專案：
-   ```bash
    dotnet run
    ```
 
