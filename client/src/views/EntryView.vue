@@ -62,6 +62,11 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
     >
       <!-- App Title -->
       <div class="text-center">
+        <img
+          src="@/assets/findone.png"
+          alt="Findone Logo"
+          class="w-32 h-32 mx-auto mb-4 animate-breathing"
+        />
         <h1 class="text-3xl font-extrabold text-blue-600 tracking-wide">Findone</h1>
         <p class="text-gray-500 mt-1 text-sm">Fast and fun AI-powered gameplay</p>
       </div>
@@ -128,3 +133,21 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes breathing {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-breathing {
+  animation: breathing 3s ease-in-out infinite;
+}
+</style>
