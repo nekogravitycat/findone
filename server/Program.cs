@@ -9,7 +9,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173", "https://findone.vicwen.app")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
