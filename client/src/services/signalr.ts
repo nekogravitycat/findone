@@ -5,7 +5,7 @@ import {
   LogLevel,
 } from "@microsoft/signalr"
 
-const DEFAULT_BASE_URL = "http://localhost:8080"
+const DEFAULT_BASE_URL = "https://findone.vicwen.app"
 const DEFAULT_HUB_ROUTE = "/gamehub"
 
 export class SignalRService {
