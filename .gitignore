@@ -715,3 +715,5 @@ FodyWeavers.xsd
 server/appsettings.Development.json
 server/appsettings.json
 /server/appsettings.json
+.env
+.secrets
