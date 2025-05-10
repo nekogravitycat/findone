@@ -28,7 +28,7 @@ async function createRoom() {
   wasTriedCreate.value = true
   if (nameError.value) return
   try {
-    let res = await game.api.createRoom(name.value.trim(), 1, 5)
+    let res = await game.api.createRoom(name.value.trim(), 2, 40)
     toRoomLobby(res)
   } catch (e) {
     console.error(e)

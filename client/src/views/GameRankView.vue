@@ -91,10 +91,11 @@ onMounted(() => {
           <!-- Top 3: Display with avatar and comment card -->
           <div
             v-if="idx < 3"
-            class="rounded-xl p-5 flex items-center shadow-xl transform transition-all duration-300 ease-in-out"
+            class="rounded-xl p-4 flex items-center shadow-xl transform transition-all duration-300 ease-in-out"
             :class="getRankColor(idx)"
           >
-            <div class="w-16 h-16 overflow-hidden rounded-full border-4 border-white shrink-0">
+            <!-- Left: Submitted picture -->
+            <div class="w-32 h-32 overflow-hidden rounded-2xl shrink-0">
               <img
                 v-if="score.base64Image"
                 :src="addBase64Prefix(score.base64Image)"
@@ -102,10 +103,12 @@ onMounted(() => {
                 class="w-full h-full object-cover"
               />
               <div v-else class="w-full h-full flex items-center justify-center bg-gray-300">
-                <span class="text-3xl font-bold text-gray-800">{{ idx + 1 }}</span>
+                <span class="text-4xl font-bold text-gray-800">{{ idx + 1 }}</span>
               </div>
             </div>
-            <div class="ml-5 flex-1">
+
+            <!-- Right: Ranking info -->
+            <div class="ml-6 flex-1">
               <div class="flex items-baseline">
                 <span class="text-2xl font-bold">{{ score.userName }}</span>
                 <span
@@ -117,7 +120,7 @@ onMounted(() => {
               <div class="text-base text-slate-700 mt-2">
                 Score: {{ score.totalRoundScore.toFixed(2) }}
               </div>
-              <div v-if="score.comment" class="text-xs text-slate-900 mt-2 italic opacity-80">
+              <div v-if="score.comment" class="text-sm text-slate-900 mt-2 italic opacity-80">
                 「{{ score.comment }}」
               </div>
             </div>
