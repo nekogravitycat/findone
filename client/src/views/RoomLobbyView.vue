@@ -20,6 +20,18 @@ function ensureRoomAndUser(): boolean {
   return true
 }
 
+const copied = ref(false)
+
+function copyRoomId() {
+  if (!game.room?.roomId) return
+  navigator.clipboard.writeText(game.room.roomId).then(() => {
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 1500)
+  })
+}
+
 // Fetch room & players
 async function updateRoom() {
   if (!game.room?.roomId) {
@@ -74,38 +86,57 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
-    <!-- User list -->
-    <div class="space-y-2">
-      <h2 class="text-xl font-semibold">Players in Room {{ game.room?.roomId }}</h2>
-      <div
-        v-for="player in players"
-        :key="player.userId"
-        class="flex items-center justify-between p-3 bg-white rounded-lg shadow border"
-      >
-        <p class="text-gray-800 font-medium">{{ player.userName }}</p>
-        <p class="text-gray-800 font-medium">{{ player.userId }}</p>
+  <div
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-sky-200 px-4"
+  >
+    <div
+      class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-6 motion-safe:animate-fade-in"
+    >
+      <!-- Room Title + Copy Button -->
+      <div class="text-center space-y-1">
+        <div class="flex items-center justify-center space-x-2">
+          <h2 class="text-2xl font-bold text-blue-600">Room {{ game.room?.roomId }}</h2>
+          <button
+            @click="copyRoomId"
+            class="text-sm text-blue-500 hover:underline active:scale-95 transition"
+          >
+            {{ copied ? "Copied!" : "Copy" }}
+          </button>
+        </div>
+        <p class="text-sm text-gray-500">Share the room ID with friends to join</p>
       </div>
-    </div>
 
-    <!-- Update Room Info Button -->
-    <div>
-      <button
-        @click="updateRoom"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
-      >
-        Update Room Info
-      </button>
-    </div>
+      <!-- Players List -->
+      <div class="space-y-2">
+        <h3 class="text-lg font-semibold text-gray-700">Player list</h3>
+        <transition-group name="fade" tag="div" class="space-y-2">
+          <div
+            v-for="player in players"
+            :key="player.userId"
+            class="px-4 py-2 bg-gray-100 rounded-xl border border-gray-300 shadow-sm text-gray-800 font-medium"
+          >
+            {{ player.userName }}
+          </div>
+        </transition-group>
+      </div>
 
-    <!-- Start Game Button -->
-    <div v-if="game.isHost">
-      <button
-        @click="startGame"
-        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition"
-      >
-        Start Game
-      </button>
+      <!-- Buttons -->
+      <div class="space-y-3">
+        <button
+          @click="updateRoom"
+          class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2 rounded-xl shadow hover:scale-105 active:scale-95 transition-transform duration-150"
+        >
+          Refresh Players
+        </button>
+
+        <button
+          v-if="game.isHost"
+          @click="startGame"
+          class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-2 rounded-xl shadow hover:scale-105 active:scale-95 transition-transform duration-150"
+        >
+          Start Game
+        </button>
+      </div>
     </div>
   </div>
 </template>

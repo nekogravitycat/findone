@@ -2,32 +2,47 @@
 import type { RoomJoinResultEntity } from "@/entities/roomEntity"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 
 const game = useGameStore()
 
 const name = ref("")
 const joinRoomId = ref("")
 
+const wasTriedCreate = ref(false)
+const wasTriedJoin = ref(false)
+
+const nameError = computed(() => {
+  if (!name.value.trim()) return "Name is required"
+  if (name.value.length > 20) return "Name must be 20 characters or less"
+  return ""
+})
+
+const joinRoomIdError = computed(() => {
+  if (!joinRoomId.value.trim()) return "Room ID is required"
+  if (!/^[a-zA-Z0-9]{6}$/.test(joinRoomId.value)) return "Room ID must be 6 alphanumeric characters"
+  return ""
+})
+
 async function createRoom() {
+  wasTriedCreate.value = true
+  if (nameError.value) return
   try {
-    let res = await game.api.createRoom(name.value, 5, 50)
-    console.log(`Room created: room=${res.room}, user=${res.user}`)
+    let res = await game.api.createRoom(name.value.trim(), 1, 5)
     toRoomLobby(res)
   } catch (e) {
     console.error(e)
-    return
   }
 }
 
 async function joinRoom() {
+  wasTriedJoin.value = true
+  if (nameError.value || joinRoomIdError.value) return
   try {
-    let res = await game.api.joinRoom(joinRoomId.value, name.value)
-    console.log(`Room joined: room=${res.room}, user=${res.user}`)
+    let res = await game.api.joinRoom(joinRoomId.value.trim(), name.value.trim())
     toRoomLobby(res)
   } catch (e) {
     console.error(e)
-    return
   }
 }
 
@@ -39,23 +54,77 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
 </script>
 
 <template>
-  <div class="flex flex-col space-y-2">
-    <!-- Input textbox for name -->
-    <input v-model="name" type="text" placeholder="Name" class="border px-3 py-2 rounded" />
-    <!-- Button for create room -->
-    <button @click="createRoom" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-      Create Room
-    </button>
-    <!-- Input textbox for join room id -->
-    <input
-      v-model="joinRoomId"
-      type="text"
-      placeholder="Room ID"
-      class="border px-3 py-2 rounded"
-    />
-    <!-- Button for join room -->
-    <button @click="joinRoom" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-      Join Room
-    </button>
+  <div
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 to-blue-100 px-4"
+  >
+    <div
+      class="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 space-y-6 motion-safe:animate-fade-in"
+    >
+      <!-- App Title -->
+      <div class="text-center">
+        <h1 class="text-3xl font-extrabold text-blue-600 tracking-wide">Findone</h1>
+        <p class="text-gray-500 mt-1 text-sm">Fast and fun AI-powered gameplay</p>
+      </div>
+
+      <!-- Form Content -->
+      <div class="space-y-4">
+        <!-- Name input -->
+        <div class="space-y-1">
+          <input
+            v-model="name"
+            type="text"
+            placeholder="Enter your name"
+            class="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 transition duration-150"
+            :class="
+              (wasTriedCreate || wasTriedJoin) && nameError
+                ? 'border-red-400 focus:ring-red-400'
+                : 'border-gray-300 focus:ring-blue-400'
+            "
+          />
+          <p v-if="(wasTriedCreate || wasTriedJoin) && nameError" class="text-sm text-red-500">
+            {{ nameError }}
+          </p>
+        </div>
+
+        <!-- Create Room button -->
+        <button
+          @click="createRoom"
+          class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2 rounded-xl shadow transition-transform duration-150"
+          :class="{ 'hover:scale-105 active:scale-95': true }"
+        >
+          Create Room
+        </button>
+
+        <!-- Divider -->
+        <div class="text-center text-gray-400 text-sm">or join existing</div>
+
+        <!-- Room ID input -->
+        <div class="space-y-1">
+          <input
+            v-model="joinRoomId"
+            type="text"
+            placeholder="Enter Room ID"
+            class="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 transition duration-150"
+            :class="
+              wasTriedJoin && joinRoomIdError
+                ? 'border-red-400 focus:ring-red-400'
+                : 'border-gray-300 focus:ring-green-400'
+            "
+          />
+          <p v-if="wasTriedJoin && joinRoomIdError" class="text-sm text-red-500">
+            {{ joinRoomIdError }}
+          </p>
+        </div>
+
+        <!-- Join Room button -->
+        <button
+          @click="joinRoom"
+          class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-2 rounded-xl shadow transition-transform duration-150"
+          :class="{ 'hover:scale-105 active:scale-95': true }"
+        >
+          Join Room
+        </button>
+      </div>
+    </div>
   </div>
 </template>

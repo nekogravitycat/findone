@@ -73,35 +73,61 @@ onUnmounted(stopCamera)
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-screen bg-black relative overflow-hidden">
+  <div
+    class="relative w-full h-full bg-gradient-to-b from-black via-black/70 to-black/50 overflow-hidden"
+  >
     <!-- Camera list -->
     <select
       v-if="videoDevices.length > 1"
       v-model="selectedDeviceId"
       @change="startCamera"
-      class="absolute top-4 left-4 bg-white text-black rounded px-3 py-1 text-sm z-10"
+      class="absolute top-4 left-4 bg-white text-black rounded-lg px-4 py-2 text-sm z-10 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
     >
       <option v-for="device in videoDevices" :key="device.deviceId" :value="device.deviceId">
         {{ device.label || "Camera " + device.deviceId }}
       </option>
     </select>
 
-    <!-- Viewfinder -->
+    <!-- Video preview -->
     <video
       ref="video"
       autoplay
       playsinline
-      class="w-full h-auto max-h-[80vh] object-cover rounded-lg"
+      class="absolute top-0 left-0 w-full h-full object-cover rounded-lg shadow-lg"
     ></video>
 
-    <!-- Shutter -->
+    <!-- Shutter button with iOS style -->
     <button
       @click="takePhoto"
-      class="absolute bottom-6 w-16 h-16 rounded-full bg-white border-4 border-gray-300 active:scale-95 transition z-10"
+      class="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white border-4 border-gray-300 shadow-lg transition-all duration-200 ease-in-out hover:bg-gray-100 focus:outline-none"
     ></button>
 
-    <!-- Captured result -->
+    <!-- Hidden canvas and preview image -->
     <canvas ref="canvas" class="hidden"></canvas>
-    <img v-if="photo" :src="photo" class="absolute top-4 right-4 w-20 rounded-lg shadow-md" />
+    <img
+      v-if="photo"
+      :src="photo"
+      class="absolute top-4 right-4 w-24 rounded-lg shadow-md z-10 border-4 border-white"
+    />
   </div>
 </template>
+
+<style scoped>
+/* Add custom styles to smooth animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Smooth animation for shutter button */
+button:hover {
+  animation: pulse 0.5s ease-in-out;
+}
+</style>
