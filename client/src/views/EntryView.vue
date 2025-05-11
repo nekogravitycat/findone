@@ -100,8 +100,12 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
           Create Room
         </button>
 
-        <!-- Divider -->
-        <div class="text-center text-gray-400 text-sm">or join existing</div>
+        <!-- Divider with lines -->
+        <div class="flex items-center justify-between text-gray-400 text-sm">
+          <div class="flex-grow border-t border-gray-300"></div>
+          <span class="px-3">or join existing</span>
+          <div class="flex-grow border-t border-gray-300"></div>
+        </div>
 
         <!-- Room ID input -->
         <div class="space-y-1">

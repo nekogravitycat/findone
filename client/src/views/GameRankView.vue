@@ -80,96 +80,94 @@ onMounted(() => {
   <div
     class="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col items-center px-6 py-8"
   >
-    <!-- Card Container -->
-    <div
-      class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-6 motion-safe:animate-fade-in"
-    >
-      <!-- Game Rankings -->
-      <h1 class="text-3xl font-semibold text-blue-600 tracking-wide mb-8">🏆 Ranking</h1>
-      <div class="w-full space-y-4">
-        <template v-for="(score, idx) in sortedScores" :key="score.userId">
-          <!-- Top 3: Display with avatar and comment card -->
-          <div
-            v-if="idx < 3"
-            class="rounded-xl p-4 flex items-center shadow-xl transform transition-all duration-300 ease-in-out"
-            :class="getRankColor(idx)"
-          >
-            <!-- Left: Submitted picture -->
-            <div class="w-32 h-32 overflow-hidden rounded-2xl shrink-0">
-              <img
-                v-if="score.base64Image"
-                :src="addBase64Prefix(score.base64Image)"
-                alt="avatar"
-                class="w-full h-full object-cover"
-              />
-              <div v-else class="w-full h-full flex items-center justify-center bg-gray-300">
-                <span class="text-4xl font-bold text-gray-800">{{ idx + 1 }}</span>
-              </div>
-            </div>
-
-            <!-- Right: Ranking info -->
-            <div class="ml-6 flex-1">
-              <div class="flex items-baseline">
-                <span class="text-2xl font-bold">{{ score.userName }}</span>
-                <span
-                  class="ml-3 px-3 py-1 rounded text-xs bg-white/80 text-blue-800 font-semibold"
-                >
-                  # {{ idx + 1 }}
-                </span>
-              </div>
-              <div class="text-base text-slate-700 mt-2">
-                Score: {{ score.totalRoundScore.toFixed(2) }}
-              </div>
-              <div v-if="score.comment" class="text-sm text-slate-900 mt-2 italic opacity-80">
-                「{{ score.comment }}」
-              </div>
-            </div>
-          </div>
-          <!-- Other rankings -->
-          <div
-            v-else
-            class="rounded-xl px-4 py-3 flex items-center bg-white shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105"
-          >
-            <span class="w-10 text-center text-lg font-bold text-gray-500">
-              {{ idx + 1 }}
-            </span>
-            <div class="flex-1 ml-4 truncate">
-              <div class="font-medium truncate">{{ score.userName }}</div>
-            </div>
-            <span class="ml-3 text-slate-700 font-bold">
-              {{ score.totalRoundScore.toFixed(2) }}
-            </span>
-          </div>
-        </template>
-
-        <!-- No submissions message -->
+    <!-- Game Rankings -->
+    <h1 class="text-3xl font-semibold text-blue-600 tracking-wide mb-8">🏆 Ranking</h1>
+    <div class="w-full space-y-4">
+      <template v-for="(score, idx) in sortedScores" :key="score.userId">
+        <!-- Top 3: Display with avatar on top and info below -->
         <div
-          v-if="sortedScores.length === 0"
-          class="text-lg font-semibold text-red-600 mt-6 text-center"
+          v-if="idx < 3"
+          class="rounded-2xl overflow-hidden shadow-xl transform transition-all duration-300 ease-in-out"
         >
-          Threre's no submission in this round.
+          <!-- Image Section with 4:3 aspect ratio -->
+          <div class="w-full aspect-[4/3] overflow-hidden">
+            <img
+              v-if="score.base64Image"
+              :src="addBase64Prefix(score.base64Image)"
+              alt="avatar"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center bg-gray-300">
+              <span class="text-5xl font-bold text-gray-800">{{ idx + 1 }}</span>
+            </div>
+          </div>
+
+          <!-- Info Section -->
+          <div class="p-4 bg-white" :class="getRankColor(idx)">
+            <div class="flex items-baseline justify-between">
+              <span
+                class="text-xl font-bold truncate overflow-hidden whitespace-nowrap block"
+                :title="score.userName"
+              >
+                {{ score.userName }}
+              </span>
+              <span class="ml-3 px-3 py-1 rounded text-xs bg-blue-100 text-blue-800 font-semibold">
+                # {{ idx + 1 }}
+              </span>
+            </div>
+            <div class="text-base text-slate-700 mt-2">
+              Score: {{ score.totalRoundScore.toFixed(2) }}
+            </div>
+            <div v-if="score.comment" class="text-sm text-slate-900 mt-2 italic opacity-80">
+              「{{ score.comment }}」
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Button to next round -->
-      <div v-if="game.isHost && !isFinal" class="flex justify-center">
-        <button
-          @click="toNextRound"
-          class="mb-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-200 hover:scale-105"
+        <!-- Other rankings -->
+        <div
+          v-else
+          class="rounded-xl px-4 py-3 flex items-center bg-white shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105"
         >
-          Next Round
-        </button>
-      </div>
+          <span class="w-10 text-center text-lg font-bold text-gray-500">
+            {{ idx + 1 }}
+          </span>
+          <div class="flex-1 ml-4 truncate">
+            <div class="font-medium truncate">{{ score.userName }}</div>
+          </div>
+          <span class="ml-3 text-slate-700 font-bold">
+            {{ score.totalRoundScore.toFixed(2) }}
+          </span>
+        </div>
+      </template>
 
-      <!-- Exit room button -->
-      <div v-if="isFinal" class="mt-8 flex justify-center">
-        <button
-          @click="toEntry"
-          class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full shadow-xl transition-all duration-300 hover:scale-105"
-        >
-          Exit Room
-        </button>
+      <!-- No submissions message -->
+      <div
+        v-if="sortedScores.length === 0"
+        class="text-lg font-semibold text-red-600 mt-6 text-center"
+      >
+        Threre's no submission in this round.
       </div>
+    </div>
+
+    <!-- Button to next round -->
+    <div v-if="game.isHost && !isFinal" class="flex justify-center m-5">
+      <button
+        @click="toNextRound"
+        class="mb-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-200 hover:scale-105"
+      >
+        Next Round
+      </button>
+    </div>
+
+    <!-- Exit room button -->
+    <div v-if="isFinal" class="mt-8 flex justify-center">
+      <button
+        @click="toEntry"
+        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full shadow-xl transition-all duration-300 hover:scale-105"
+      >
+        Exit Room
+      </button>
     </div>
   </div>
 </template>
