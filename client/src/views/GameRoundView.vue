@@ -90,11 +90,11 @@ async function submitImage(image: string): Promise<void> {
     }
 
     submittedImage.value = image
-    showToastMessage("照片提交成功！", "success")
+    showToastMessage("Image submitted!", "success")
     console.log("[Game] Image submitted successfully")
   } catch (error) {
     console.error("[Game] Failed to submit image:", error)
-    showToastMessage("提交失敗，請再試一次！", "error")
+    showToastMessage("Image recognition failed. Please resubmit", "error")
   } finally {
     isSubmitting.value = false
   }
