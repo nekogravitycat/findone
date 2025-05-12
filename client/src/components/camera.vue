@@ -120,7 +120,6 @@ onUnmounted(stopCamera)
     ></video>
     <!-- Switch Camera Button -->
     <button
-      v-if="videoDevices.length > 1"
       @click="switchCamera"
       class="absolute bottom-6 right-6 w-12 h-12 bg-white text-black rounded-full shadow-md z-10 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
       title="Switch Camera"
