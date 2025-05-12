@@ -8,16 +8,19 @@ import { useRoute } from "vue-router"
 // Store
 const game = useGameStore()
 
-// UI state
+// UI State: User input
 const name = ref("")
 const joinRoomId = ref("")
-const joinRoomMode = ref(false)
 
+// UI State: Mode toggles
+const joinRoomMode = ref(false)
+const showRoomConfig = ref(false)
+
+// UI State: Validation flags
 const wasTriedCreate = ref(false)
 const wasTriedJoin = ref(false)
 
-const showRoomConfig = ref(false)
-
+// Room settings
 const rounds = ref(5)
 const secondsPerRound = ref(50)
 
