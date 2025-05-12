@@ -15,16 +15,14 @@ export const useGameStore = defineStore(
     const scores = ref<ScoreEntity[]>([])
     const isHost = computed(() => room.value?.hostUserId === userId.value)
     const cameraId = ref<string | null>(null)
+    const facingMode = ref<"user" | "environment">("user")
 
-    return { api, room, round, userId, scores, isHost, cameraId }
+    return { api, room, round, userId, scores, isHost, cameraId, facingMode }
   },
   {
     persist: {
       afterHydrate: (ctx) => {
         ctx.store.api = new GameAPI()
-        if (ctx.store.room) {
-          ctx.store.api.getRoom(ctx.store.room.roomId)
-        }
       },
     },
   }
