@@ -110,7 +110,6 @@ onMounted(() => {
           <h1 class="text-3xl font-extrabold tracking-wide text-blue-600">Findone</h1>
           <p class="mt-1 mb-5 text-sm text-gray-500">Fast and fun AI-powered gameplay</p>
         </div>
-
         <!-- Form Content -->
         <div class="space-y-4">
           <!-- Name input -->
@@ -130,7 +129,6 @@ onMounted(() => {
               {{ nameError }}
             </p>
           </div>
-
           <!-- Hide when join code is provided in the URL -->
           <div v-if="!joinRoomMode">
             <!-- Create Room button -->
@@ -141,14 +139,12 @@ onMounted(() => {
             >
               Create Room
             </button>
-
             <!-- Divider with lines -->
             <div class="m-4 flex items-center justify-between text-sm text-gray-400">
               <div class="flex-grow border-t border-gray-300"></div>
               <span class="px-3">or join existing</span>
               <div class="flex-grow border-t border-gray-300"></div>
             </div>
-
             <!-- Room ID input -->
             <div class="space-y-1">
               <input
@@ -167,7 +163,6 @@ onMounted(() => {
               </p>
             </div>
           </div>
-
           <!-- Join Room button -->
           <button
             @click="joinRoom"
@@ -179,16 +174,15 @@ onMounted(() => {
         </div>
       </div>
       <!-- Create room config -->
-      <!-- Create room config -->
       <div v-else class="space-y-4">
         <div class="text-center text-xl font-bold text-blue-600">Room Settings</div>
-
         <!-- Number of rounds -->
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700">Number of Rounds</label>
           <input
-            type="number"
             v-model="rounds"
+            type="number"
+            inputmode="numeric"
             min="1"
             max="10"
             class="w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
@@ -197,13 +191,13 @@ onMounted(() => {
             {{ roundsError }}
           </p>
         </div>
-
         <!-- Seconds per round -->
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700">Time per Round (seconds)</label>
           <input
-            type="number"
             v-model="secondsPerRound"
+            type="number"
+            inputmode="numeric"
             min="10"
             max="180"
             class="w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
@@ -212,7 +206,6 @@ onMounted(() => {
             {{ secondsPerRoundError }}
           </p>
         </div>
-
         <!-- Buttons -->
         <div class="space-y-3">
           <button
@@ -221,7 +214,6 @@ onMounted(() => {
           >
             Confirm & Create Room
           </button>
-
           <button
             @click="showRoomConfig = false"
             class="w-full rounded-xl bg-gray-300 py-2 font-medium text-gray-800 shadow transition duration-150 hover:scale-105 active:scale-95"
