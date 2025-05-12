@@ -64,17 +64,17 @@ function joinUrl() {
   return `https://findone.gravitycat.tw/?room=${game.room?.roomId}`
 }
 
-function openShareModal() {
+async function openShareModal() {
   if (!game.room?.roomId) return
-
-  QRCode.toDataURL(joinUrl())
-    .then((url) => {
-      qrCodeUrl.value = url
-      showShareModal.value = true
+  try {
+    const url = await QRCode.toDataURL(joinUrl(), {
+      scale: 8,
     })
-    .catch((err) => {
-      console.error("[Lobby] Failed to generate QR code:", err)
-    })
+    qrCodeUrl.value = url
+    showShareModal.value = true
+  } catch (err) {
+    console.error("[Lobby] Failed to generate QR code:", err)
+  }
 }
 
 function closeShareModal() {
