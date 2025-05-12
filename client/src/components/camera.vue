@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useGameStore } from "@/stores/gameStore"
 import { onMounted, onUnmounted, ref } from "vue"
+
+const game = useGameStore()
 
 const emit = defineEmits<{
   (e: "photoTaken", photo: string): void
@@ -27,6 +30,7 @@ async function startCamera() {
     currentStream = stream
     if (video.value) {
       video.value.srcObject = stream
+      game.cameraId = selectedDeviceId.value
     }
   } catch (err) {
     console.error("Cannot access camera", err)
@@ -44,13 +48,26 @@ async function getVideoDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices()
     videoDevices.value = devices.filter((d) => d.kind === "videoinput")
-    if (videoDevices.value.length > 0 && !selectedDeviceId.value) {
+    // Try to select the last used device
+    if (game.cameraId && videoDevices.value.map((d) => d.deviceId).includes(game.cameraId)) {
+      selectedDeviceId.value = game.cameraId
+    } else {
+      // Automatically select the first available video device
       selectedDeviceId.value = videoDevices.value[0].deviceId
-      await startCamera()
     }
+    await startCamera()
   } catch (err) {
     console.error("Cannot list cameras", err)
   }
+}
+
+function switchCamera() {
+  if (videoDevices.value.length < 2) return
+
+  const currentIndex = videoDevices.value.findIndex((d) => d.deviceId === selectedDeviceId.value)
+  const nextIndex = (currentIndex + 1) % videoDevices.value.length
+  selectedDeviceId.value = videoDevices.value[nextIndex].deviceId
+  startCamera()
 }
 
 function takePhoto() {
@@ -76,18 +93,6 @@ onUnmounted(stopCamera)
   <div
     class="relative w-full h-full bg-gradient-to-b from-black via-black/70 to-black/50 overflow-hidden"
   >
-    <!-- Camera list -->
-    <select
-      v-if="videoDevices.length > 1"
-      v-model="selectedDeviceId"
-      @change="startCamera"
-      class="absolute top-4 left-4 bg-white text-black rounded-lg px-4 py-2 text-sm z-10 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-    >
-      <option v-for="device in videoDevices" :key="device.deviceId" :value="device.deviceId">
-        {{ device.label || "Camera " + device.deviceId }}
-      </option>
-    </select>
-
     <!-- Video preview -->
     <video
       ref="video"
@@ -95,6 +100,16 @@ onUnmounted(stopCamera)
       playsinline
       class="absolute top-0 left-0 w-full h-full object-cover rounded-lg shadow-lg"
     ></video>
+
+    <!-- Switch Camera Button -->
+    <button
+      v-if="videoDevices.length > 1"
+      @click="switchCamera"
+      class="absolute bottom-6 right-6 w-12 h-12 bg-white text-black rounded-full shadow-md z-10 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+      title="Switch Camera"
+    >
+      <span class="material-symbols-outlined text-xl">cameraswitch</span>
+    </button>
 
     <!-- Shutter button with iOS style -->
     <button
