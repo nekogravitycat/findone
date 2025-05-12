@@ -127,19 +127,19 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="min-h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-sky-200 px-4"
+    class="flex min-h-full items-center justify-center bg-gradient-to-br from-blue-100 to-sky-200 px-4"
   >
     <div
-      class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-6 motion-safe:animate-fade-in"
+      class="motion-safe:animate-fade-in w-full max-w-md space-y-6 rounded-2xl bg-white p-6 shadow-xl"
     >
       <!-- Room Title + Copy Button -->
-      <div class="text-center space-y-1">
+      <div class="space-y-1 text-center">
         <div class="flex items-center justify-center space-x-2">
           <h2 class="text-2xl font-bold text-blue-600">Room {{ game.room?.roomId }}</h2>
           <!-- Share Button -->
           <button
             @click="openShareModal"
-            class="text-sm text-blue-500 hover:underline active:scale-95 transition"
+            class="text-sm text-blue-500 transition hover:underline active:scale-95"
           >
             Share
           </button>
@@ -154,7 +154,7 @@ onUnmounted(() => {
           <div
             v-for="player in players"
             :key="player.userId"
-            class="px-4 py-2 bg-gray-100 rounded-xl border border-gray-300 shadow-sm text-gray-800 font-medium"
+            class="rounded-xl border border-gray-300 bg-gray-100 px-4 py-2 font-medium text-gray-800 shadow-sm"
           >
             {{ player.userName }}
           </div>
@@ -165,7 +165,7 @@ onUnmounted(() => {
       <div class="space-y-3">
         <button
           @click="updateRoom"
-          class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2 rounded-xl shadow hover:scale-105 active:scale-95 transition-transform duration-150"
+          class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-2 font-semibold text-white shadow transition-transform duration-150 hover:scale-105 active:scale-95"
         >
           Refresh Players
         </button>
@@ -173,7 +173,7 @@ onUnmounted(() => {
         <button
           v-if="game.isHost"
           @click="startGame"
-          class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-2 rounded-xl shadow hover:scale-105 active:scale-95 transition-transform duration-150"
+          class="w-full rounded-xl bg-gradient-to-r from-green-500 to-green-600 py-2 font-semibold text-white shadow transition-transform duration-150 hover:scale-105 active:scale-95"
         >
           Start Game
         </button>
@@ -186,7 +186,7 @@ onUnmounted(() => {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     @click.self="closeShareModal"
   >
-    <div class="bg-white rounded-2xl p-6 w-80 relative shadow-xl text-center space-y-4">
+    <div class="relative w-80 space-y-4 rounded-2xl bg-white p-6 text-center shadow-xl">
       <!-- Close button -->
       <button
         @click="closeShareModal"
@@ -196,11 +196,11 @@ onUnmounted(() => {
       </button>
       <h3 class="text-lg font-semibold text-gray-700">Share Room</h3>
       <div v-if="qrCodeUrl" class="flex justify-center">
-        <img :src="qrCodeUrl" alt="QR Code" class="w-40 h-40" />
+        <img :src="qrCodeUrl" alt="QR Code" class="h-40 w-40" />
       </div>
       <button
         @click="copyJoinUrl"
-        class="w-full bg-blue-500 text-white font-semibold py-2 rounded-xl shadow hover:scale-105 active:scale-95 transition-transform duration-150"
+        class="w-full rounded-xl bg-blue-500 py-2 font-semibold text-white shadow transition-transform duration-150 hover:scale-105 active:scale-95"
       >
         {{ copied ? "Copied!" : "Copy Join URL" }}
       </button>

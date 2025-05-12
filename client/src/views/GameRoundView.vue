@@ -138,31 +138,31 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="w-full h-[100dvh] bg-white rounded-2xl shadow-xl p-6 space-y-4 motion-safe:animate-fade-in flex flex-col"
+    class="motion-safe:animate-fade-in flex h-[100dvh] w-full flex-col space-y-4 rounded-2xl bg-white p-6 shadow-xl"
     style="box-sizing: border-box"
   >
     <!-- Round Info & Countdown (left and right aligned) -->
-    <div class="flex justify-between items-center w-full">
+    <div class="flex w-full items-center justify-between">
       <!-- Round Info (aligned to the right) -->
-      <div class="text-left space-y-1">
-        <p class="text-gray-500 text-sm">
+      <div class="space-y-1 text-left">
+        <p class="text-sm text-gray-500">
           Round {{ (game.room?.currentRound ?? 0) + 1 }} / {{ game.room?.round }}
         </p>
         <h1 class="text-2xl font-bold text-blue-600">📸 {{ round?.targetName }}</h1>
       </div>
 
       <!-- Countdown (aligned to the left) -->
-      <div v-if="countdown" class="text-right space-y-1">
-        <h2 class="text-gray-500 text-sm">Time remaining</h2>
-        <p class="text-2xl font-mono text-red-600">{{ countdown }}</p>
+      <div v-if="countdown" class="space-y-1 text-right">
+        <h2 class="text-sm text-gray-500">Time remaining</h2>
+        <p class="font-mono text-2xl text-red-600">{{ countdown }}</p>
       </div>
     </div>
 
     <!-- Camera or Submitted Photo -->
-    <div class="flex-1 flex flex-col items-center justify-center min-h-0 space-y-4">
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center space-y-4">
       <template v-if="!submittedImage">
         <!-- Submitting view -->
-        <div v-if="isSubmitting" class="flex items-center justify-center h-full">
+        <div v-if="isSubmitting" class="flex h-full items-center justify-center">
           <div class="flex flex-col items-center justify-center space-y-4">
             <div
               class="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
@@ -178,9 +178,9 @@ onUnmounted(() => {
         <img
           :src="addBase64Prefix(submittedImage)"
           alt="Submitted photo"
-          class="rounded-xl max-h-[60vh] mx-auto"
+          class="mx-auto max-h-[60vh] rounded-xl"
         />
-        <p class="mt-4 text-lg text-gray-700 font-semibold">Waiting for other players...</p>
+        <p class="mt-4 text-lg font-semibold text-gray-700">Waiting for other players...</p>
       </div>
     </div>
   </div>
@@ -189,7 +189,7 @@ onUnmounted(() => {
   <transition name="fade">
     <div
       v-if="showToast"
-      class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-6 py-4 rounded-2xl shadow-xl text-white text-2xl font-bold z-50"
+      class="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 transform rounded-2xl px-6 py-4 text-2xl font-bold text-white shadow-xl"
       :class="showToast.type === 'success' ? 'bg-green-500' : 'bg-red-500'"
     >
       {{ showToast.message }}
