@@ -141,9 +141,9 @@ onUnmounted(() => {
     class="motion-safe:animate-fade-in flex h-[100dvh] w-full flex-col space-y-4 rounded-2xl bg-white p-6 shadow-xl"
     style="box-sizing: border-box"
   >
-    <!-- Round Info & Countdown (left and right aligned) -->
+    <!-- Round Info & Countdown -->
     <div class="flex w-full items-center justify-between">
-      <!-- Round Info (aligned to the right) -->
+      <!-- Round Info -->
       <div class="space-y-1 text-left">
         <p class="text-sm text-gray-500">
           Round {{ (game.room?.currentRound ?? 0) + 1 }} / {{ game.room?.round }}
@@ -151,7 +151,7 @@ onUnmounted(() => {
         <h1 class="text-2xl font-bold text-blue-600">📸 {{ round?.targetName }}</h1>
       </div>
 
-      <!-- Countdown (aligned to the left) -->
+      <!-- Countdown -->
       <div v-if="countdown" class="space-y-1 text-right">
         <h2 class="text-sm text-gray-500">Time remaining</h2>
         <p class="font-mono text-2xl text-red-600">{{ countdown }}</p>
