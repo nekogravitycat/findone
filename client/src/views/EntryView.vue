@@ -5,8 +5,10 @@ import { useGameStore } from "@/stores/gameStore"
 import { ref, computed, onMounted } from "vue"
 import { useRoute } from "vue-router"
 
+// Store
 const game = useGameStore()
 
+// UI state
 const name = ref("")
 const joinRoomId = ref("")
 const joinRoomMode = ref(false)
@@ -14,46 +16,52 @@ const joinRoomMode = ref(false)
 const wasTriedCreate = ref(false)
 const wasTriedJoin = ref(false)
 
+// Name input validation
 const nameError = computed(() => {
   if (!name.value.trim()) return "Name is required"
   if (name.value.length > 20) return "Name must be 20 characters or less"
   return ""
 })
 
+// Room ID input validation
 const joinRoomIdError = computed(() => {
   if (!joinRoomId.value.trim()) return "Room ID is required"
   if (!/^[a-zA-Z0-9]{6}$/.test(joinRoomId.value)) return "Room ID must be 6 alphanumeric characters"
   return ""
 })
 
-async function createRoom() {
-  wasTriedCreate.value = true
-  if (nameError.value) return
-  try {
-    let res = await game.api.createRoom(name.value.trim(), 2, 40)
-    toRoomLobby(res)
-  } catch (e) {
-    console.error(e)
-  }
-}
-
-async function joinRoom() {
-  wasTriedJoin.value = true
-  if (nameError.value || joinRoomIdError.value) return
-  try {
-    let res = await game.api.joinRoom(joinRoomId.value.trim(), name.value.trim())
-    toRoomLobby(res)
-  } catch (e) {
-    console.error(e)
-  }
-}
-
+// Navigate to lobby with room data
 async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
   game.room = roomJoinResult.room
   game.userId = roomJoinResult.user.userId
   router.push({ name: "lobby" })
 }
 
+// Create a new room
+async function createRoom() {
+  wasTriedCreate.value = true
+  if (nameError.value) return
+  try {
+    const res = await game.api.createRoom(name.value.trim(), 2, 40)
+    toRoomLobby(res)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+// Join an existing room
+async function joinRoom() {
+  wasTriedJoin.value = true
+  if (nameError.value || joinRoomIdError.value) return
+  try {
+    const res = await game.api.joinRoom(joinRoomId.value.trim(), name.value.trim())
+    toRoomLobby(res)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+// Check for room query param on mount
 onMounted(() => {
   const route = useRoute()
   if (route.query.room) {

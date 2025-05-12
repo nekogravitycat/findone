@@ -4,22 +4,27 @@ import { onMounted, onUnmounted, ref } from "vue"
 
 const game = useGameStore()
 
+// Emit photo data to parent
 const emit = defineEmits<{
   (e: "photoTaken", photo: string): void
 }>()
 
+// DOM refs
 const video = ref<HTMLVideoElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
 const photo = ref<string | null>(null)
 
+// Device and stream state
 const videoDevices = ref<MediaDeviceInfo[]>([])
 const selectedDeviceId = ref<string | null>(null)
 let currentStream: MediaStream | null = null
 
-async function startCamera() {
+// Start video stream with current device/facingMode
+async function startCamera(): Promise<void> {
   if (currentStream) {
     currentStream.getTracks().forEach((track) => track.stop())
   }
+
   try {
     const constraints: MediaStreamConstraints = {
       video: {
@@ -27,47 +32,51 @@ async function startCamera() {
         deviceId: selectedDeviceId.value ? { exact: selectedDeviceId.value } : undefined,
       },
     }
+
     const stream = await navigator.mediaDevices.getUserMedia(constraints)
     currentStream = stream
+
     if (video.value) {
       video.value.srcObject = stream
-      game.cameraId = selectedDeviceId.value
+      game.cameraId = selectedDeviceId.value ?? null
     }
   } catch (err) {
-    console.error("Cannot access camera", err)
+    console.error("[Camera] Cannot access camera:", err)
   }
 }
 
-function stopCamera() {
+// Stop any active stream
+function stopCamera(): void {
   if (currentStream) {
     currentStream.getTracks().forEach((track) => track.stop())
     currentStream = null
   }
 }
 
-async function getVideoDevices() {
+// Get available video input devices and start camera
+async function getVideoDevices(): Promise<void> {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices()
     videoDevices.value = devices.filter((d) => d.kind === "videoinput")
-    // Try to select the last used device
-    if (game.cameraId && videoDevices.value.map((d) => d.deviceId).includes(game.cameraId)) {
+
+    // Reuse previous device if available
+    if (game.cameraId && videoDevices.value.some((d) => d.deviceId === game.cameraId)) {
       selectedDeviceId.value = game.cameraId
     } else {
-      // Automatically select the first available video device
-      selectedDeviceId.value = videoDevices.value[0].deviceId
+      selectedDeviceId.value = videoDevices.value[0]?.deviceId ?? null
     }
+
     await startCamera()
   } catch (err) {
-    console.error("Cannot list cameras", err)
+    console.error("[Camera] Cannot list cameras:", err)
   }
 }
 
-function switchCamera() {
+// Switch between available cameras
+function switchCamera(): void {
   if (videoDevices.value.length < 2) {
-    // Flip the facing mode if only one camera is available
     game.facingMode = game.facingMode === "user" ? "environment" : "user"
   } else {
-    // Select the next camera if multiple cameras are detected
     const currentIndex = videoDevices.value.findIndex((d) => d.deviceId === selectedDeviceId.value)
     const nextIndex = (currentIndex + 1) % videoDevices.value.length
     selectedDeviceId.value = videoDevices.value[nextIndex].deviceId
@@ -75,17 +84,21 @@ function switchCamera() {
   startCamera()
 }
 
-function takePhoto() {
+// Capture a still image from video
+function takePhoto(): void {
   const vid = video.value
   const can = canvas.value
+
   if (vid && can) {
     const context = can.getContext("2d")
     if (context) {
       can.width = vid.videoWidth
       can.height = vid.videoHeight
       context.drawImage(vid, 0, 0, can.width, can.height)
+
       photo.value = can.toDataURL("image/jpeg", 0.8)
-      emit("photoTaken", photo.value.split(",")[1]) // Send only the base64 part
+      const base64 = photo.value.split(",")[1]
+      emit("photoTaken", base64)
     }
   }
 }
