@@ -50,17 +50,17 @@ function toEntry(): void {
   router.push({ name: "entry" })
 }
 
-// Get Tailwind class for top ranks
+// Get Tailwind class for top ranks (Gold, Silver, Bronze, Default)
 function getRankColor(idx: number): string {
   switch (idx) {
-    case 0:
-      return "bg-yellow-400 text-yellow-900"
-    case 1:
-      return "bg-gray-300 text-gray-900"
-    case 2:
-      return "bg-yellow-700 text-yellow-100"
-    default:
-      return "bg-slate-100 text-slate-800"
+    case 0: // Gold
+      return "bg-yellow-500 text-yellow-900"
+    case 1: // Silver
+      return "bg-zinc-400 text-zinc-900"
+    case 2: // Bronze
+      return "bg-yellow-600 text-amber-900"
+    default: // White
+      return "bg-white text-gray-800"
   }
 }
 
