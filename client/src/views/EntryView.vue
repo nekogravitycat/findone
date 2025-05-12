@@ -2,7 +2,8 @@
 import type { RoomJoinResultEntity } from "@/entities/roomEntity"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { ref, computed } from "vue"
+import { ref, computed, onMounted } from "vue"
+import { useRoute } from "vue-router"
 
 const game = useGameStore()
 
@@ -51,6 +52,13 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
   game.userId = roomJoinResult.user.userId
   router.push({ name: "lobby" })
 }
+
+onMounted(() => {
+  const route = useRoute()
+  if (route.query.room) {
+    joinRoomId.value = route.query.room as string
+  }
+})
 </script>
 
 <template>

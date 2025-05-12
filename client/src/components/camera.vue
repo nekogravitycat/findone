@@ -23,6 +23,7 @@ async function startCamera() {
   try {
     const constraints: MediaStreamConstraints = {
       video: {
+        facingMode: game.facingMode,
         deviceId: selectedDeviceId.value ? { exact: selectedDeviceId.value } : undefined,
       },
     }
@@ -62,11 +63,15 @@ async function getVideoDevices() {
 }
 
 function switchCamera() {
-  if (videoDevices.value.length < 2) return
-
-  const currentIndex = videoDevices.value.findIndex((d) => d.deviceId === selectedDeviceId.value)
-  const nextIndex = (currentIndex + 1) % videoDevices.value.length
-  selectedDeviceId.value = videoDevices.value[nextIndex].deviceId
+  if (videoDevices.value.length < 2) {
+    // Flip the facing mode if only one camera is available
+    game.facingMode = game.facingMode === "user" ? "environment" : "user"
+  } else {
+    // Select the next camera if multiple cameras are detected
+    const currentIndex = videoDevices.value.findIndex((d) => d.deviceId === selectedDeviceId.value)
+    const nextIndex = (currentIndex + 1) % videoDevices.value.length
+    selectedDeviceId.value = videoDevices.value[nextIndex].deviceId
+  }
   startCamera()
 }
 
@@ -100,7 +105,6 @@ onUnmounted(stopCamera)
       playsinline
       class="absolute top-0 left-0 w-full h-full object-cover rounded-lg shadow-lg"
     ></video>
-
     <!-- Switch Camera Button -->
     <button
       v-if="videoDevices.length > 1"
@@ -110,13 +114,11 @@ onUnmounted(stopCamera)
     >
       <span class="material-symbols-outlined text-xl">cameraswitch</span>
     </button>
-
     <!-- Shutter button with iOS style -->
     <button
       @click="takePhoto"
       class="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white border-4 border-gray-300 shadow-lg transition-all duration-200 ease-in-out hover:bg-gray-100 focus:outline-none"
     ></button>
-
     <!-- Hidden canvas and preview image -->
     <canvas ref="canvas" class="hidden"></canvas>
     <img

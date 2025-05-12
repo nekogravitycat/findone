@@ -2,7 +2,8 @@
 import type { UserEntity } from "@/entities/userEntity"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { onMounted, onUnmounted, ref } from "vue"
+import QRCode from "qrcode"
+import { onMounted, onUnmounted, ref, watch } from "vue"
 
 const game = useGameStore()
 const players = ref<UserEntity[]>([])
@@ -20,17 +21,9 @@ function ensureRoomAndUser(): boolean {
   return true
 }
 
+const showShareModal = ref(false)
+const qrCodeUrl = ref("")
 const copied = ref(false)
-
-function copyRoomId() {
-  if (!game.room?.roomId) return
-  navigator.clipboard.writeText(game.room.roomId).then(() => {
-    copied.value = true
-    setTimeout(() => {
-      copied.value = false
-    }, 1500)
-  })
-}
 
 // Fetch room & players
 async function updateRoom() {
@@ -67,10 +60,49 @@ async function startGame() {
   }
 }
 
+function joinUrl() {
+  return `https://findone.gravitycat.tw/?room=${game.room?.roomId}`
+}
+
+function openShareModal() {
+  if (!game.room?.roomId) return
+
+  QRCode.toDataURL(joinUrl())
+    .then((url) => {
+      qrCodeUrl.value = url
+      showShareModal.value = true
+    })
+    .catch((err) => {
+      console.error("[Lobby] Failed to generate QR code:", err)
+    })
+}
+
+function closeShareModal() {
+  showShareModal.value = false
+}
+
+function copyJoinUrl() {
+  if (!game.room?.roomId) return
+  navigator.clipboard.writeText(joinUrl()).then(() => {
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 1500)
+  })
+}
+
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeShareModal()
+  }
+}
+
 // Lifecycle hooks
 onMounted(() => {
   updateRoom()
   game.api.onEvent("GameJoined", updateRoom)
+
+  window.addEventListener("keydown", onKeydown)
 
   // Go to game view when round info is received
   game.api.onRoundInfo((info) => {
@@ -82,6 +114,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   game.api.offEvent("GameJoined", updateRoom)
+  window.removeEventListener("keydown", onKeydown)
 })
 </script>
 
@@ -96,11 +129,12 @@ onUnmounted(() => {
       <div class="text-center space-y-1">
         <div class="flex items-center justify-center space-x-2">
           <h2 class="text-2xl font-bold text-blue-600">Room {{ game.room?.roomId }}</h2>
+          <!-- Share Button -->
           <button
-            @click="copyRoomId"
+            @click="openShareModal"
             class="text-sm text-blue-500 hover:underline active:scale-95 transition"
           >
-            {{ copied ? "Copied!" : "Copy" }}
+            Share
           </button>
         </div>
         <p class="text-sm text-gray-500">Share the room ID with friends to join</p>
@@ -137,6 +171,32 @@ onUnmounted(() => {
           Start Game
         </button>
       </div>
+    </div>
+  </div>
+  <!-- Share Modal -->
+  <div
+    v-if="showShareModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    @click.self="closeShareModal"
+  >
+    <div class="bg-white rounded-2xl p-6 w-80 relative shadow-xl text-center space-y-4">
+      <!-- Close button -->
+      <button
+        @click="closeShareModal"
+        class="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+      >
+        ✕
+      </button>
+      <h3 class="text-lg font-semibold text-gray-700">Share Room</h3>
+      <div v-if="qrCodeUrl" class="flex justify-center">
+        <img :src="qrCodeUrl" alt="QR Code" class="w-40 h-40" />
+      </div>
+      <button
+        @click="copyJoinUrl"
+        class="w-full bg-blue-500 text-white font-semibold py-2 rounded-xl shadow hover:scale-105 active:scale-95 transition-transform duration-150"
+      >
+        {{ copied ? "Copied!" : "Copy Join URL" }}
+      </button>
     </div>
   </div>
 </template>
