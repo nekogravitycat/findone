@@ -87,7 +87,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-sky-200 px-4"
+    class="min-h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-sky-200 px-4"
   >
     <div
       class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-6 motion-safe:animate-fade-in"

@@ -14,8 +14,9 @@ export const useGameStore = defineStore(
     const userId = ref<string | null>(null)
     const scores = ref<ScoreEntity[]>([])
     const isHost = computed(() => room.value?.hostUserId === userId.value)
+    const cameraId = ref<string | null>(null)
 
-    return { api, room, round, userId, scores, isHost }
+    return { api, room, round, userId, scores, isHost, cameraId }
   },
   {
     persist: {

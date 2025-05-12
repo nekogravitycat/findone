@@ -55,7 +55,7 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
 
 <template>
   <div
-    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 to-blue-100 px-4"
+    class="min-h-full flex items-center justify-center bg-gradient-to-br from-sky-100 to-blue-100 px-4"
   >
     <div
       class="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 space-y-6 motion-safe:animate-fade-in"
@@ -100,8 +100,12 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
           Create Room
         </button>
 
-        <!-- Divider -->
-        <div class="text-center text-gray-400 text-sm">or join existing</div>
+        <!-- Divider with lines -->
+        <div class="flex items-center justify-between text-gray-400 text-sm">
+          <div class="flex-grow border-t border-gray-300"></div>
+          <span class="px-3">or join existing</span>
+          <div class="flex-grow border-t border-gray-300"></div>
+        </div>
 
         <!-- Room ID input -->
         <div class="space-y-1">
