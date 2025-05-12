@@ -7,7 +7,21 @@ import { computed, onMounted } from "vue"
 
 const game = useGameStore()
 
-// Helpers
+// Sorted scores: higher total first, then by userName
+const sortedScores = computed(() => {
+  return [...game.scores].sort((a, b) =>
+    b.totalRoundScore !== a.totalRoundScore
+      ? b.totalRoundScore - a.totalRoundScore
+      : a.userName.localeCompare(b.userName)
+  )
+})
+
+// Check if this is the final round
+const isFinal = computed(() => {
+  return (game.room?.currentRound ?? 0) + 1 >= (game.room?.round ?? 0)
+})
+
+// Ensure room ID and user ID are present
 function ensureRoomAndUser(): boolean {
   if (!game.room?.roomId) {
     console.error("[Rank] Missing room ID")
@@ -20,21 +34,7 @@ function ensureRoomAndUser(): boolean {
   return true
 }
 
-// Sort scores by total, then by userName
-const sortedScores = computed(() => {
-  return [...game.scores].sort((a, b) =>
-    b.totalRoundScore !== a.totalRoundScore
-      ? b.totalRoundScore - a.totalRoundScore
-      : a.userName.localeCompare(b.userName)
-  )
-})
-
-// Determine if the game is over
-const isFinal = computed(() => {
-  return (game.room?.currentRound ?? 0) + 1 >= (game.room?.round ?? 0)
-})
-
-// Host starts next round
+// Host: move to next round
 function toNextRound(): void {
   if (!ensureRoomAndUser()) return
 
@@ -42,9 +42,8 @@ function toNextRound(): void {
   game.api.getRoundInvoke(game.room!.roomId, game.userId!, game.room!.currentRound)
 }
 
-// Game over - return to entry page
-function toEntry() {
-  // Clear game state
+// End game and return to entry page
+function toEntry(): void {
   game.room = null
   game.round = null
   game.userId = null
@@ -52,7 +51,7 @@ function toEntry() {
   router.push({ name: "entry" })
 }
 
-// Rank badge color based on index
+// Get Tailwind class for top ranks
 function getRankColor(idx: number): string {
   switch (idx) {
     case 0:
@@ -66,7 +65,7 @@ function getRankColor(idx: number): string {
   }
 }
 
-// Listen for next round data
+// Listen for next round info
 onMounted(() => {
   game.api.onRoundInfo((info: RoundEntity) => {
     info.endTime = new Date(info.endTime)

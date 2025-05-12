@@ -3,12 +3,18 @@ import type { UserEntity } from "@/entities/userEntity"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
 import QRCode from "qrcode"
-import { onMounted, onUnmounted, ref, watch } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 
+// Global game state
 const game = useGameStore()
-const players = ref<UserEntity[]>([])
 
-// Helpers
+// Reactive state
+const players = ref<UserEntity[]>([])
+const showShareModal = ref(false)
+const qrCodeUrl = ref("")
+const copied = ref(false)
+
+// Validate room and user presence
 function ensureRoomAndUser(): boolean {
   if (!game.room?.roomId) {
     console.error("[Lobby] Missing room ID")
@@ -21,11 +27,7 @@ function ensureRoomAndUser(): boolean {
   return true
 }
 
-const showShareModal = ref(false)
-const qrCodeUrl = ref("")
-const copied = ref(false)
-
-// Fetch room & players
+// Fetch latest room and player list
 async function updateRoom() {
   if (!game.room?.roomId) {
     console.error("[Lobby] Cannot update room: room ID is not available")
@@ -37,6 +39,7 @@ async function updateRoom() {
       console.error("[Lobby] Failed to fetch room data")
       return
     }
+
     game.room = room
     console.log("[Lobby] Room data updated:", room)
 
@@ -48,7 +51,7 @@ async function updateRoom() {
   }
 }
 
-// Only host can call this
+// Host-only: start the game and get round info
 async function startGame() {
   if (!ensureRoomAndUser()) return
   try {
@@ -60,27 +63,29 @@ async function startGame() {
   }
 }
 
+// Construct room join URL
 function joinUrl() {
   return `https://findone.gravitycat.tw/?room=${game.room?.roomId}`
 }
 
-function openShareModal() {
+// Show share modal and generate QR code
+async function openShareModal() {
   if (!game.room?.roomId) return
-
-  QRCode.toDataURL(joinUrl())
-    .then((url) => {
-      qrCodeUrl.value = url
-      showShareModal.value = true
-    })
-    .catch((err) => {
-      console.error("[Lobby] Failed to generate QR code:", err)
-    })
+  try {
+    const url = await QRCode.toDataURL(joinUrl(), { scale: 8 })
+    qrCodeUrl.value = url
+    showShareModal.value = true
+  } catch (err) {
+    console.error("[Lobby] Failed to generate QR code:", err)
+  }
 }
 
+// Close the share modal
 function closeShareModal() {
   showShareModal.value = false
 }
 
+// Copy join URL to clipboard with feedback
 function copyJoinUrl() {
   if (!game.room?.roomId) return
   navigator.clipboard.writeText(joinUrl()).then(() => {
@@ -91,13 +96,14 @@ function copyJoinUrl() {
   })
 }
 
+// Handle keyboard events (Escape to close modal)
 function onKeydown(event: KeyboardEvent) {
   if (event.key === "Escape") {
     closeShareModal()
   }
 }
 
-// Lifecycle hooks
+// Lifecycle: mount
 onMounted(() => {
   updateRoom()
   game.api.onEvent("GameJoined", updateRoom)
@@ -112,6 +118,7 @@ onMounted(() => {
   })
 })
 
+// Lifecycle: unmount
 onUnmounted(() => {
   game.api.offEvent("GameJoined", updateRoom)
   window.removeEventListener("keydown", onKeydown)

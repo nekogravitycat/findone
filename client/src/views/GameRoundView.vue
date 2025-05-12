@@ -5,17 +5,19 @@ import type { ScoreEntity } from "@/entities/scoreEntity"
 import { addBase64Prefix } from "@/lib/b64img"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { onMounted, onUnmounted, ref } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 
 const game = useGameStore()
+
+// State
 const round = ref<RoundEntity | null>(null)
 const countdown = ref("")
+const isSubmitting = ref(false)
 const submittedImage = ref<string | null>(null)
 const showToast = ref<{ message: string; type: "success" | "error" } | null>(null)
-
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 
-// Helpers
+// Validate required state
 function ensureRoomAndUser(): boolean {
   if (!game.room?.roomId) {
     console.error("[Game] Missing room ID")
@@ -28,7 +30,7 @@ function ensureRoomAndUser(): boolean {
   return true
 }
 
-// Show a toast message to the user
+// Display toast message
 function showToastMessage(message: string, type: "success" | "error" = "success") {
   showToast.value = { message, type }
   setTimeout(() => {
@@ -36,12 +38,11 @@ function showToastMessage(message: string, type: "success" | "error" = "success"
   }, 3000)
 }
 
-// Get rank after round ends (host only)
+// Host: auto get rank after round ends
 function invokeGetRankOnTime(endTime: Date) {
   if (!ensureRoomAndUser()) return
 
   const delay = endTime.getTime() - Date.now()
-
   const getRank = () => {
     game.api.getRankInvoke(game.room!.roomId, game.userId!)
     console.log("[Game] getRank invoked")
@@ -54,47 +55,52 @@ function invokeGetRankOnTime(endTime: Date) {
   }
 }
 
-// Countdown display
+// Start countdown timer
 function startCountdown(targetTime: Date) {
   if (countdownInterval) {
     clearInterval(countdownInterval)
   }
 
-  const updateCountdown = () => {
+  const update = () => {
     const diff = targetTime.getTime() - Date.now()
     if (diff <= 0) {
       countdown.value = "00:00"
       clearInterval(countdownInterval!)
       return
     }
+
     const minutes = Math.floor(diff / 60000)
     const seconds = Math.floor((diff % 60000) / 1000)
     countdown.value = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
   }
 
-  updateCountdown()
-  countdownInterval = setInterval(updateCountdown, 500)
+  update()
+  countdownInterval = setInterval(update, 500)
 }
 
-// Player submits image
+// Player image submission
 async function submitImage(image: string): Promise<void> {
   if (!ensureRoomAndUser()) return
 
   try {
+    isSubmitting.value = true
     const result = await game.api.submitImage(game.room!.roomId, game.userId!, image)
     if (!result) {
       throw new Error("Image analysis failed")
     }
-    console.log("[Game] Image submitted successfully")
-    submittedImage.value = image // Save submitted image to show it
+
+    submittedImage.value = image
     showToastMessage("照片提交成功！", "success")
+    console.log("[Game] Image submitted successfully")
   } catch (error) {
     console.error("[Game] Failed to submit image:", error)
     showToastMessage("提交失敗，請再試一次！", "error")
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-// Setup round info on enter
+// Setup round state and timers
 function setupRound() {
   round.value = game.round
   if (!round.value) {
@@ -123,6 +129,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (countdownInterval) {
     clearInterval(countdownInterval)
+    countdownInterval = null
   }
 })
 </script>
@@ -151,8 +158,21 @@ onUnmounted(() => {
 
     <!-- Camera or Submitted Photo -->
     <div class="flex-1 flex flex-col items-center justify-center min-h-0 space-y-4">
-      <Camera v-if="!submittedImage" @photo-taken="submitImage" class="rounded-xl" />
+      <template v-if="!submittedImage">
+        <!-- Submitting view -->
+        <div v-if="isSubmitting" class="flex items-center justify-center h-full">
+          <div class="flex flex-col items-center justify-center space-y-4">
+            <div
+              class="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
+            ></div>
+            <p class="text-lg font-semibold text-gray-500">Submitting image...</p>
+          </div>
+        </div>
+        <!-- Camera view -->
+        <Camera v-else @photo-taken="submitImage" class="rounded-xl" />
+      </template>
       <div v-else class="text-center">
+        <!-- Submitted view -->
         <img
           :src="addBase64Prefix(submittedImage)"
           alt="Submitted photo"
