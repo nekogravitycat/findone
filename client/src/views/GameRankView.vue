@@ -37,9 +37,8 @@ function ensureRoomAndUser(): boolean {
 // Host: move to next round
 function toNextRound(): void {
   if (!ensureRoomAndUser()) return
-
-  game.room!.currentRound = (game.room?.currentRound ?? 0) + 1
-  game.api.getRoundInvoke(game.room!.roomId, game.userId!, game.room!.currentRound)
+  const nextRound = (game.room?.currentRound ?? 0) + 1
+  game.api.getRoundInvoke(game.room!.roomId, game.userId!, nextRound)
 }
 
 // End game and return to entry page

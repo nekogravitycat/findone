@@ -116,7 +116,7 @@ function setupRound() {
 }
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
   setupRound()
 
   game.api.onRankInfo((scores: ScoreEntity[]) => {
@@ -124,6 +124,8 @@ onMounted(() => {
     console.log("[Game] Scores received:", scores)
     router.push({ name: "rank" })
   })
+
+  game.room = await game.api.getRoom(game.room!.roomId)
 })
 
 onUnmounted(() => {
