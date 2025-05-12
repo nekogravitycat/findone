@@ -12,6 +12,7 @@ const game = useGameStore()
 // State
 const round = ref<RoundEntity | null>(null)
 const countdown = ref("")
+const isSubmitting = ref(false)
 const submittedImage = ref<string | null>(null)
 const showToast = ref<{ message: string; type: "success" | "error" } | null>(null)
 let countdownInterval: ReturnType<typeof setInterval> | null = null
@@ -82,6 +83,7 @@ async function submitImage(image: string): Promise<void> {
   if (!ensureRoomAndUser()) return
 
   try {
+    isSubmitting.value = true
     const result = await game.api.submitImage(game.room!.roomId, game.userId!, image)
     if (!result) {
       throw new Error("Image analysis failed")
@@ -93,6 +95,8 @@ async function submitImage(image: string): Promise<void> {
   } catch (error) {
     console.error("[Game] Failed to submit image:", error)
     showToastMessage("提交失敗，請再試一次！", "error")
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -154,8 +158,21 @@ onUnmounted(() => {
 
     <!-- Camera or Submitted Photo -->
     <div class="flex-1 flex flex-col items-center justify-center min-h-0 space-y-4">
-      <Camera v-if="!submittedImage" @photo-taken="submitImage" class="rounded-xl" />
+      <template v-if="!submittedImage">
+        <!-- Submitting view -->
+        <div v-if="isSubmitting" class="flex items-center justify-center h-full">
+          <div class="flex flex-col items-center justify-center space-y-4">
+            <div
+              class="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
+            ></div>
+            <p class="text-lg font-semibold text-gray-500">Submitting image...</p>
+          </div>
+        </div>
+        <!-- Camera view -->
+        <Camera v-else @photo-taken="submitImage" class="rounded-xl" />
+      </template>
       <div v-else class="text-center">
+        <!-- Submitted view -->
         <img
           :src="addBase64Prefix(submittedImage)"
           alt="Submitted photo"
