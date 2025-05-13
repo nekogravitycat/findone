@@ -88,10 +88,17 @@ namespace server.Services
             {
                 User user = await _userService.CreateUser(userName, context.ConnectionId);
                 Room room = await _roomService.JoinRoom(roomId, user);
+                
+                // check if room is full
+                if(room.UserIds.Count > 15) {
+                    throw new Exception("Room is full");
+                }
+                
+                // add connection
                 await _connectService.CreateConnection(context.ConnectionId, user.UserId.ToString(), room.RoomId);
-
                 // update roomId
                 user.RoomId = room.RoomId;
+                // update user
                 await _userService.UpdateUser(user);
 
                 RoomUserResponse response = new()
