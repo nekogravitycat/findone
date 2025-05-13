@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useGameStore } from "@/stores/gameStore"
 import { onMounted } from "vue"
 import { RouterView } from "vue-router"
-import { useGameStore } from "./stores/gameStore"
 
 const game = useGameStore()
 

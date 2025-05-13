@@ -2,93 +2,207 @@
 import type { UserEntity } from "@/entities/userEntity"
 import router from "@/services/router"
 import { useGameStore } from "@/stores/gameStore"
-import { onMounted, onUnmounted, ref } from "vue"
+import QRCode from "qrcode"
+import { ref, onMounted, onUnmounted } from "vue"
 
+// Global game state
 const game = useGameStore()
+
+// Reactive state
 const players = ref<UserEntity[]>([])
+const showShareModal = ref(false)
+const qrCodeUrl = ref("")
+const copied = ref(false)
 
-async function updateRoom() {
+// Validate room and user presence
+function ensureRoomAndUser(): boolean {
   if (!game.room?.roomId) {
-    console.error("Room ID is not available")
-    return
-  }
-  const room = await game.api.getRoom(game.room.roomId)
-  if (!room) {
-    console.error("Failed to fetch room data")
-    return
-  }
-  game.room = room
-  console.log("Room data updated:", room)
-  // Fetching user data for each userId in the room
-  const userPromises = game.room.userIds.map((userId) => game.api.getUser(userId))
-  const fetchedUsers = await Promise.all(userPromises)
-  players.value = fetchedUsers
-}
-
-async function startGame() {
-  if (!game.room?.roomId) {
-    console.error("Room ID is not available")
-    return
+    console.error("[Lobby] Missing room ID")
+    return false
   }
   if (!game.userId) {
-    console.error("User ID is not available")
+    console.error("[Lobby] Missing user ID")
+    return false
+  }
+  return true
+}
+
+// Fetch latest room and player list
+async function updateRoom() {
+  if (!game.room?.roomId) {
+    console.error("[Lobby] Cannot update room: room ID is not available")
     return
   }
   try {
-    await game.api.gameStartInvoke(game.room.roomId, game.userId)
-    console.log("Game started successfully")
-  } catch (error) {
-    console.error("Failed to start game:", error)
+    const room = await game.api.getRoom(game.room.roomId)
+    if (!room) {
+      console.error("[Lobby] Failed to fetch room data")
+      return
+    }
+
+    game.room = room
+    console.log("[Lobby] Room data updated:", room)
+
+    const userPromises = room.userIds.map((id) => game.api.getUser(id))
+    const users = await Promise.all(userPromises)
+    players.value = users.filter((u): u is UserEntity => !!u)
+  } catch (err) {
+    console.error("[Lobby] Error while updating room:", err)
   }
 }
 
-function toGameRound() {
-  router.push({ name: "game" })
+// Host-only: start the game and get round info
+async function startGame() {
+  if (!ensureRoomAndUser()) return
+  try {
+    await game.api.gameStartInvoke(game.room!.roomId, game.userId!)
+    console.log("[Lobby] Game started by host")
+    game.api.getRoundInvoke(game.room!.roomId, game.userId!, game.room!.currentRound ?? 0)
+  } catch (error) {
+    console.error("[Lobby] Failed to start game:", error)
+  }
 }
 
+// Construct room join URL
+function joinUrl() {
+  return `https://findone.gravitycat.tw/?room=${game.room?.roomId}`
+}
+
+// Show share modal and generate QR code
+async function openShareModal() {
+  if (!game.room?.roomId) return
+  try {
+    const url = await QRCode.toDataURL(joinUrl(), { scale: 8 })
+    qrCodeUrl.value = url
+    showShareModal.value = true
+  } catch (err) {
+    console.error("[Lobby] Failed to generate QR code:", err)
+  }
+}
+
+// Close the share modal
+function closeShareModal() {
+  showShareModal.value = false
+}
+
+// Copy join URL to clipboard with feedback
+function copyJoinUrl() {
+  if (!game.room?.roomId) return
+  navigator.clipboard.writeText(joinUrl()).then(() => {
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 1500)
+  })
+}
+
+// Handle keyboard events (Escape to close modal)
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeShareModal()
+  }
+}
+
+// Lifecycle: mount
 onMounted(() => {
   updateRoom()
   game.api.onEvent("GameJoined", updateRoom)
-  game.api.onGameStart(toGameRound)
+
+  window.addEventListener("keydown", onKeydown)
+
+  // Go to game view when round info is received
+  game.api.onRoundInfo((info) => {
+    info.endTime = new Date(info.endTime)
+    game.round = info
+    router.push({ name: "game" })
+  })
 })
 
+// Lifecycle: unmount
 onUnmounted(() => {
   game.api.offEvent("GameJoined", updateRoom)
+  window.removeEventListener("keydown", onKeydown)
 })
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
-    <!-- User list -->
-    <div class="space-y-2">
-      <h2 class="text-xl font-semibold">Players in Room {{ game.room?.roomId }}</h2>
-      <div
-        v-for="player in players"
-        :key="player.userId"
-        class="flex items-center justify-between p-3 bg-white rounded-lg shadow border"
-      >
-        <p class="text-gray-800 font-medium">{{ player.userName }}</p>
-        <p class="text-gray-800 font-medium">{{ player.userId }}</p>
+  <div
+    class="flex min-h-full items-center justify-center bg-gradient-to-br from-blue-100 to-sky-200 px-4"
+  >
+    <div
+      class="motion-safe:animate-fade-in w-full max-w-md space-y-6 rounded-2xl bg-white p-6 shadow-xl"
+    >
+      <!-- Room Title + Copy Button -->
+      <div class="space-y-1 text-center">
+        <div class="flex items-center justify-center space-x-2">
+          <h2 class="text-2xl font-bold text-blue-600">Room {{ game.room?.roomId }}</h2>
+          <!-- Share Button -->
+          <button
+            @click="openShareModal"
+            class="text-sm text-blue-500 transition hover:underline active:scale-95"
+          >
+            Share
+          </button>
+        </div>
+        <p class="text-sm text-gray-500">Share the room ID with friends to join</p>
+      </div>
+
+      <!-- Players List -->
+      <div class="space-y-2">
+        <h3 class="text-lg font-semibold text-gray-700">Player list</h3>
+        <transition-group name="fade" tag="div" class="space-y-2">
+          <div
+            v-for="player in players"
+            :key="player.userId"
+            class="rounded-xl border border-gray-300 bg-gray-100 px-4 py-2 font-medium text-gray-800 shadow-sm"
+          >
+            {{ player.userName }}
+          </div>
+        </transition-group>
+      </div>
+
+      <!-- Buttons -->
+      <div class="space-y-3">
+        <button
+          @click="updateRoom"
+          class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-2 font-semibold text-white shadow transition-transform duration-150 hover:scale-105 active:scale-95"
+        >
+          Refresh Players
+        </button>
+
+        <button
+          v-if="game.isHost"
+          @click="startGame"
+          class="w-full rounded-xl bg-gradient-to-r from-green-500 to-green-600 py-2 font-semibold text-white shadow transition-transform duration-150 hover:scale-105 active:scale-95"
+        >
+          Start Game
+        </button>
       </div>
     </div>
-
-    <!-- Update Room Info Button -->
-    <div>
+  </div>
+  <!-- Share Modal -->
+  <div
+    v-if="showShareModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    @click.self="closeShareModal"
+  >
+    <div class="relative w-80 space-y-4 rounded-2xl bg-white p-6 text-center shadow-xl">
+      <!-- Close button -->
       <button
-        @click="updateRoom"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
+        @click="closeShareModal"
+        class="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
       >
-        Update Room Info
+        ✕
       </button>
-    </div>
-
-    <!-- Start Game Button -->
-    <div v-if="game.isHost">
+      <h3 class="text-lg font-semibold text-gray-700">Share Room</h3>
+      <div v-if="qrCodeUrl" class="flex justify-center">
+        <img :src="qrCodeUrl" alt="QR Code" class="h-40 w-40" />
+      </div>
       <button
-        @click="startGame"
-        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition"
+        @click="copyJoinUrl"
+        class="w-full rounded-xl bg-blue-500 py-2 font-semibold text-white shadow transition-transform duration-150 hover:scale-105 active:scale-95"
       >
-        Start Game
+        {{ copied ? "Copied!" : "Copy Join URL" }}
       </button>
     </div>
   </div>

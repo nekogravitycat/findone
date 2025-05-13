@@ -5,5 +5,5 @@
   "singleQuote": false,
   "printWidth": 100,
   "trailingComma": "es5",
-  "plugins": ["prettier-plugin-organize-imports"]
+  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"]
 }

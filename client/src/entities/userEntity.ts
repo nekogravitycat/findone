@@ -1,5 +1,6 @@
 export interface UserEntity {
   userId: string
+  connectionId: string
   userName: string
   roomId: string
   joinedAt: Date
