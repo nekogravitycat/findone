@@ -31,6 +31,7 @@ function ensureRoomAndUser(): boolean {
 async function updateRoom() {
   if (!game.room?.roomId) {
     console.error("[Lobby] Cannot update room: room ID is not available")
+    router.replace({ name: "entry" })
     return
   }
   try {
@@ -53,7 +54,10 @@ async function updateRoom() {
 
 // Host-only: start the game and get round info
 async function startGame() {
-  if (!ensureRoomAndUser()) return
+  if (!ensureRoomAndUser()) {
+    router.replace({ name: "entry" })
+    return
+  }
   try {
     await game.api.gameStartInvoke(game.room!.roomId, game.userId!)
     console.log("[Lobby] Game started by host")
@@ -114,7 +118,7 @@ onMounted(() => {
   game.api.onRoundInfo((info) => {
     info.endTime = new Date(info.endTime)
     game.round = info
-    router.push({ name: "game" })
+    router.replace({ name: "game" })
   })
 })
 

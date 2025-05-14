@@ -89,8 +89,17 @@ async function joinRoom() {
   }
 }
 
+// Reset state
+function resetState() {
+  game.room = null
+  game.round = null
+  game.userId = null
+  game.scores = []
+}
+
 // Check for room query param on mount
 onMounted(() => {
+  resetState()
   const route = useRoute()
   if (route.query.room) {
     joinRoomId.value = route.query.room as string

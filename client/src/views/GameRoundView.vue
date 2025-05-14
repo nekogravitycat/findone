@@ -64,7 +64,10 @@ function startCountdown(targetTime: Date, onEnd?: () => void) {
 
 // Player image submission
 async function submitImage(image: string): Promise<void> {
-  if (!ensureRoomAndUser()) return
+  if (!ensureRoomAndUser()) {
+    router.replace({ name: "entry" })
+    return
+  }
 
   try {
     isSubmitting.value = true
@@ -89,6 +92,7 @@ function setupRound() {
   round.value = game.round
   if (!round.value) {
     console.error("[Game] Round data is not available")
+    router.replace({ name: "entry" })
     return
   }
 
@@ -106,7 +110,7 @@ onMounted(async () => {
   game.api.onRankInfo((scores: ScoreEntity[]) => {
     game.scores = scores
     console.log("[Game] Scores received:", scores)
-    router.push({ name: "rank" })
+    router.replace({ name: "rank" })
   })
 
   game.room = await game.api.getRoom(game.room!.roomId)
