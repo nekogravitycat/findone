@@ -38,25 +38,8 @@ function showToastMessage(message: string, type: "success" | "error" = "success"
   }, 3000)
 }
 
-// Host: auto get rank after round ends
-function invokeGetRankOnTime(endTime: Date) {
-  if (!ensureRoomAndUser()) return
-
-  const delay = endTime.getTime() - Date.now()
-  const getRank = () => {
-    game.api.getRankInvoke(game.room!.roomId, game.userId!)
-    console.log("[Game] getRank invoked")
-  }
-
-  if (delay <= 0) {
-    getRank()
-  } else {
-    setTimeout(getRank, delay)
-  }
-}
-
 // Start countdown timer
-function startCountdown(targetTime: Date) {
+function startCountdown(targetTime: Date, onEnd?: () => void) {
   if (countdownInterval) {
     clearInterval(countdownInterval)
   }
@@ -66,6 +49,7 @@ function startCountdown(targetTime: Date) {
     if (diff <= 0) {
       countdown.value = "00:00"
       clearInterval(countdownInterval!)
+      onEnd?.()
       return
     }
 
@@ -108,11 +92,11 @@ function setupRound() {
     return
   }
 
-  startCountdown(round.value.endTime)
+  const onCountdownEnds = game.isHost
+    ? () => game.api.getRankInvoke(game.room!.roomId, game.userId!)
+    : undefined
 
-  if (game.isHost) {
-    invokeGetRankOnTime(round.value.endTime)
-  }
+  startCountdown(round.value.endTime, onCountdownEnds)
 }
 
 // Lifecycle hooks
