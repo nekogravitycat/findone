@@ -83,7 +83,7 @@ onMounted(() => {
   >
     <!-- Game Rankings -->
     <h1 class="mb-8 text-3xl font-semibold tracking-wide text-blue-600">🏆 Ranking</h1>
-    <div class="w-full space-y-4">
+    <div class="w-full max-w-150 space-y-4">
       <template v-for="(score, idx) in sortedScores" :key="score.userId">
         <!-- Top 3: Display with avatar on top and info below -->
         <div
