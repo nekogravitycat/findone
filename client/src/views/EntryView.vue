@@ -58,6 +58,13 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
   router.push({ name: "lobby" })
 }
 
+// Enter room configuration
+async function enterRoomConfig() {
+  wasTriedCreate.value = true
+  if (nameError.value) return
+  showRoomConfig.value = true
+}
+
 // Create a new room
 async function createRoom() {
   wasTriedCreate.value = true
@@ -136,7 +143,7 @@ onMounted(() => {
           <div v-if="!joinRoomMode">
             <!-- Create Room button -->
             <button
-              @click="showRoomConfig = true"
+              @click="enterRoomConfig"
               class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-2 font-semibold text-white shadow transition-transform duration-150"
               :class="{ 'hover:scale-105 active:scale-95': true }"
             >
