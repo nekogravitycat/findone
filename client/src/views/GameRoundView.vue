@@ -38,25 +38,8 @@ function showToastMessage(message: string, type: "success" | "error" = "success"
   }, 3000)
 }
 
-// Host: auto get rank after round ends
-function invokeGetRankOnTime(endTime: Date) {
-  if (!ensureRoomAndUser()) return
-
-  const delay = endTime.getTime() - Date.now()
-  const getRank = () => {
-    game.api.getRankInvoke(game.room!.roomId, game.userId!)
-    console.log("[Game] getRank invoked")
-  }
-
-  if (delay <= 0) {
-    getRank()
-  } else {
-    setTimeout(getRank, delay)
-  }
-}
-
 // Start countdown timer
-function startCountdown(targetTime: Date) {
+function startCountdown(targetTime: Date, onEnd?: () => void) {
   if (countdownInterval) {
     clearInterval(countdownInterval)
   }
@@ -66,6 +49,7 @@ function startCountdown(targetTime: Date) {
     if (diff <= 0) {
       countdown.value = "00:00"
       clearInterval(countdownInterval!)
+      onEnd?.()
       return
     }
 
@@ -80,7 +64,10 @@ function startCountdown(targetTime: Date) {
 
 // Player image submission
 async function submitImage(image: string): Promise<void> {
-  if (!ensureRoomAndUser()) return
+  if (!ensureRoomAndUser()) {
+    router.replace({ name: "entry" })
+    return
+  }
 
   try {
     isSubmitting.value = true
@@ -90,11 +77,11 @@ async function submitImage(image: string): Promise<void> {
     }
 
     submittedImage.value = image
-    showToastMessage("照片提交成功！", "success")
+    showToastMessage("Image submitted!", "success")
     console.log("[Game] Image submitted successfully")
   } catch (error) {
     console.error("[Game] Failed to submit image:", error)
-    showToastMessage("提交失敗，請再試一次！", "error")
+    showToastMessage("Image recognition failed. Please resubmit", "error")
   } finally {
     isSubmitting.value = false
   }
@@ -105,14 +92,15 @@ function setupRound() {
   round.value = game.round
   if (!round.value) {
     console.error("[Game] Round data is not available")
+    router.replace({ name: "entry" })
     return
   }
 
-  startCountdown(round.value.endTime)
+  const onCountdownEnds = game.isHost
+    ? () => game.api.getRankInvoke(game.room!.roomId, game.userId!)
+    : undefined
 
-  if (game.isHost) {
-    invokeGetRankOnTime(round.value.endTime)
-  }
+  startCountdown(round.value.endTime, onCountdownEnds)
 }
 
 // Lifecycle hooks
@@ -122,7 +110,7 @@ onMounted(async () => {
   game.api.onRankInfo((scores: ScoreEntity[]) => {
     game.scores = scores
     console.log("[Game] Scores received:", scores)
-    router.push({ name: "rank" })
+    router.replace({ name: "rank" })
   })
 
   game.room = await game.api.getRoom(game.room!.roomId)
@@ -141,9 +129,9 @@ onUnmounted(() => {
     class="motion-safe:animate-fade-in flex h-[100dvh] w-full flex-col space-y-4 rounded-2xl bg-white p-6 shadow-xl"
     style="box-sizing: border-box"
   >
-    <!-- Round Info & Countdown (left and right aligned) -->
+    <!-- Round Info & Countdown -->
     <div class="flex w-full items-center justify-between">
-      <!-- Round Info (aligned to the right) -->
+      <!-- Round Info -->
       <div class="space-y-1 text-left">
         <p class="text-sm text-gray-500">
           Round {{ (game.room?.currentRound ?? 0) + 1 }} / {{ game.room?.round }}
@@ -151,7 +139,7 @@ onUnmounted(() => {
         <h1 class="text-2xl font-bold text-blue-600">📸 {{ round?.targetName }}</h1>
       </div>
 
-      <!-- Countdown (aligned to the left) -->
+      <!-- Countdown -->
       <div v-if="countdown" class="space-y-1 text-right">
         <h2 class="text-sm text-gray-500">Time remaining</h2>
         <p class="font-mono text-2xl text-red-600">{{ countdown }}</p>

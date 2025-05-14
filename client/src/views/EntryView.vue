@@ -8,16 +8,19 @@ import { useRoute } from "vue-router"
 // Store
 const game = useGameStore()
 
-// UI state
+// UI State: User input
 const name = ref("")
 const joinRoomId = ref("")
-const joinRoomMode = ref(false)
 
+// UI State: Mode toggles
+const joinRoomMode = ref(false)
+const showRoomConfig = ref(false)
+
+// UI State: Validation flags
 const wasTriedCreate = ref(false)
 const wasTriedJoin = ref(false)
 
-const showRoomConfig = ref(false)
-
+// Room settings
 const rounds = ref(5)
 const secondsPerRound = ref(50)
 
@@ -55,6 +58,13 @@ async function toRoomLobby(roomJoinResult: RoomJoinResultEntity) {
   router.push({ name: "lobby" })
 }
 
+// Enter room configuration
+async function enterRoomConfig() {
+  wasTriedCreate.value = true
+  if (nameError.value) return
+  showRoomConfig.value = true
+}
+
 // Create a new room
 async function createRoom() {
   wasTriedCreate.value = true
@@ -79,8 +89,17 @@ async function joinRoom() {
   }
 }
 
+// Reset state
+function resetState() {
+  game.room = null
+  game.round = null
+  game.userId = null
+  game.scores = []
+}
+
 // Check for room query param on mount
 onMounted(() => {
+  resetState()
   const route = useRoute()
   if (route.query.room) {
     joinRoomId.value = route.query.room as string
@@ -110,7 +129,6 @@ onMounted(() => {
           <h1 class="text-3xl font-extrabold tracking-wide text-blue-600">Findone</h1>
           <p class="mt-1 mb-5 text-sm text-gray-500">Fast and fun AI-powered gameplay</p>
         </div>
-
         <!-- Form Content -->
         <div class="space-y-4">
           <!-- Name input -->
@@ -130,25 +148,22 @@ onMounted(() => {
               {{ nameError }}
             </p>
           </div>
-
           <!-- Hide when join code is provided in the URL -->
           <div v-if="!joinRoomMode">
             <!-- Create Room button -->
             <button
-              @click="showRoomConfig = true"
+              @click="enterRoomConfig"
               class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-2 font-semibold text-white shadow transition-transform duration-150"
               :class="{ 'hover:scale-105 active:scale-95': true }"
             >
               Create Room
             </button>
-
             <!-- Divider with lines -->
             <div class="m-4 flex items-center justify-between text-sm text-gray-400">
               <div class="flex-grow border-t border-gray-300"></div>
               <span class="px-3">or join existing</span>
               <div class="flex-grow border-t border-gray-300"></div>
             </div>
-
             <!-- Room ID input -->
             <div class="space-y-1">
               <input
@@ -167,7 +182,6 @@ onMounted(() => {
               </p>
             </div>
           </div>
-
           <!-- Join Room button -->
           <button
             @click="joinRoom"
@@ -179,16 +193,15 @@ onMounted(() => {
         </div>
       </div>
       <!-- Create room config -->
-      <!-- Create room config -->
       <div v-else class="space-y-4">
         <div class="text-center text-xl font-bold text-blue-600">Room Settings</div>
-
         <!-- Number of rounds -->
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700">Number of Rounds</label>
           <input
-            type="number"
             v-model="rounds"
+            type="number"
+            inputmode="numeric"
             min="1"
             max="10"
             class="w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
@@ -197,13 +210,13 @@ onMounted(() => {
             {{ roundsError }}
           </p>
         </div>
-
         <!-- Seconds per round -->
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700">Time per Round (seconds)</label>
           <input
-            type="number"
             v-model="secondsPerRound"
+            type="number"
+            inputmode="numeric"
             min="10"
             max="180"
             class="w-full rounded-xl border px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
@@ -212,7 +225,6 @@ onMounted(() => {
             {{ secondsPerRoundError }}
           </p>
         </div>
-
         <!-- Buttons -->
         <div class="space-y-3">
           <button
@@ -221,7 +233,6 @@ onMounted(() => {
           >
             Confirm & Create Room
           </button>
-
           <button
             @click="showRoomConfig = false"
             class="w-full rounded-xl bg-gray-300 py-2 font-medium text-gray-800 shadow transition duration-150 hover:scale-105 active:scale-95"

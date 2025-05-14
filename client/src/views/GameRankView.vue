@@ -36,7 +36,10 @@ function ensureRoomAndUser(): boolean {
 
 // Host: move to next round
 function toNextRound(): void {
-  if (!ensureRoomAndUser()) return
+  if (!ensureRoomAndUser()) {
+    router.replace({ name: "entry" })
+    return
+  }
   const nextRound = (game.room?.currentRound ?? 0) + 1
   game.api.getRoundInvoke(game.room!.roomId, game.userId!, nextRound)
 }
@@ -47,7 +50,7 @@ function toEntry(): void {
   game.round = null
   game.userId = null
   game.scores = []
-  router.push({ name: "entry" })
+  router.replace({ name: "entry" })
 }
 
 // Get Tailwind class for top ranks (Gold, Silver, Bronze, Default)
@@ -69,7 +72,7 @@ onMounted(() => {
   game.api.onRoundInfo((info: RoundEntity) => {
     info.endTime = new Date(info.endTime)
     game.round = info
-    router.push({ name: "game" })
+    router.replace({ name: "game" })
   })
 })
 </script>
