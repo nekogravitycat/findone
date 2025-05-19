@@ -26,6 +26,9 @@ async function startCamera(): Promise<void> {
   }
 
   try {
+    console.log("[Camera] Starting camera with device ID:", selectedDeviceId.value)
+    console.log("[Camera] Facing mode:", game.facingMode)
+
     const constraints: MediaStreamConstraints = {
       video: {
         facingMode: game.facingMode,
@@ -39,6 +42,9 @@ async function startCamera(): Promise<void> {
     if (video.value) {
       video.value.srcObject = stream
       game.cameraId = selectedDeviceId.value ?? null
+      console.log("[Camera] Camera started successfully")
+    } else {
+      console.error("[Camera] Video element not found")
     }
   } catch (err) {
     console.error("[Camera] Cannot access camera:", err)
