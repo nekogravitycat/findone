@@ -1,6 +1,7 @@
-﻿using Humanizer;
+using Humanizer;
 using Microsoft.AspNetCore.SignalR;
 using server.Models;
+using static server.Models.Response;
 
 namespace server.Services
 {
@@ -10,12 +11,16 @@ namespace server.Services
         private readonly RoomService _roomService;
         private readonly RoomEventService _roomEventService;
         private readonly UserService _userService;
+        private readonly ConnectService _connectService;
+        private readonly RankService _rankService;
 
-        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService)
+        public GameService(RoomService roomService, RoomEventService roomEventService, UserService userService, ConnectService connectService, RankService rankService)
         {
             _roomService = roomService;
             _roomEventService = roomEventService;
             _userService = userService;
+            _connectService = connectService;
+            _rankService = rankService;
         }
 
         public async Task HandleGetUser(HubCallerContext context, IClientProxy caller, string userId)
@@ -23,11 +28,13 @@ namespace server.Services
             try
             {
                 User user = await _userService.GetUser(userId) ?? throw new Exception("User not found");
-                await caller.SendAsync("UserFound", user);
+
+                await caller.SendAsync($"UserFound:{userId}", user);
             }
             catch (Exception ex)
             {
-                await caller.SendAsync("UserNotFound", userId, ex.Message);
+                Console.WriteLine(ex.Message);
+                await caller.SendAsync($"UserNotFound:{userId}", userId, ex.Message);
             }
         }
 
@@ -40,34 +47,74 @@ namespace server.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 await caller.SendAsync("RoomNotFound", roomId, ex.Message);
             }
         }
 
         public async Task HandleCreateRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string userName, int round, int timeLimit)
         {
-            User user = await _userService.CreateUser(userName);
-            Room room = await _roomService.CreateRoom(user, round, timeLimit);
+            try
+            {
 
-            user.RoomId = room.RoomId;
+                User user = await _userService.CreateUser(userName, context.ConnectionId);
+                Room room = await _roomService.CreateRoom(user, round, timeLimit);
+                await _connectService.CreateConnection(context.ConnectionId, user.UserId.ToString(), room.RoomId);
 
-            await _userService.UpdateUser(user);
+                user.RoomId = room.RoomId;
 
-            await groups.AddToGroupAsync(context.ConnectionId, room.RoomId);
-            await caller.SendAsync("RoomCreated", room.RoomId, user.UserId);
+                await _userService.UpdateUser(user);
+
+                await groups.AddToGroupAsync(context.ConnectionId, room.RoomId);
+
+                RoomUserResponse response = new()
+                {
+                    Room = room,
+                    User = user,
+                };
+
+                await caller.SendAsync("RoomCreated", response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in HandleJoinRoom: {ex}"); // Log the exception
+                await caller.SendAsync("RoomCreateFailed", ex.Message);
+            }
         }
 
-        public async Task HandleJoinRoom(HubCallerContext context, IClientProxy caller, IGroupManager groups, string roomId, string userName)
+        public async Task HandleJoinRoom(HubCallerContext context, IHubCallerClients clients, IClientProxy caller, IGroupManager groups, string roomId, string userName)
         {
-            User user = await _userService.CreateUser(userName);
-            Room room = await _roomService.JoinRoom(roomId, user);
+            try
+            {
+                User user = await _userService.CreateUser(userName, context.ConnectionId);
+                Room room = await _roomService.JoinRoom(roomId, user);
+                
+                // check if room is full
+                if(room.UserIds.Count > 15) {
+                    throw new Exception("Room is full");
+                }
+                
+                // add connection
+                await _connectService.CreateConnection(context.ConnectionId, user.UserId.ToString(), room.RoomId);
+                // update roomId
+                user.RoomId = room.RoomId;
+                // update user
+                await _userService.UpdateUser(user);
 
-            // update roomId
-            user.RoomId = room.RoomId;
-            await _userService.UpdateUser(user);
+                RoomUserResponse response = new()
+                {
+                    Room = room,
+                    User = user
+                };
 
-            await groups.AddToGroupAsync(context.ConnectionId, roomId);
-            await caller.SendAsync("GameJoined", roomId, user);
+                await groups.AddToGroupAsync(context.ConnectionId, roomId);
+                await clients.Group(roomId).SendAsync("GameJoined", response);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error in HandleJoinRoom: {ex.Message}\n{ex.StackTrace}");
+                await caller.SendAsync("JoinRoomFailed", ex.Message);
+            }
         }
 
         public async Task HandleStartGame(IHubCallerClients clients, string roomId, string userId)
@@ -148,61 +195,24 @@ namespace server.Services
             }
         }
 
-        public async Task HandleSubmitImage(string connectionId, string roomId, string userId, string base64Image)
+        public async Task HandleSubmitImage(IHubCallerClients clients, string connectionId, string roomId, string userId, string base64Image)
         {
-            // message queue
-            await _roomEventService.EnqueueSubmitAsync(connectionId, roomId, userId, base64Image);
+            try
+            {
+                // message queue
+                await _roomEventService.EnqueueSubmitAsync(connectionId, roomId, userId, base64Image);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("SubmitImageFailed", ex.Message);
+            }
         }
 
         public async Task HandleGetRank(IHubCallerClients clients, string roomId, string userId)
         {
             try
             {
-                // validate room and user
-                Room room = await _roomService.GetRoom(roomId);
-                User user = await _userService.GetUser(userId);
-
-                if (room.HostUserId != user.UserId)
-                    throw new Exception("Only the host can start the game");
-
-                int currentRound = room.CurrentRound ?? throw new Exception("Round not started yet!");
-                DateTime roundEndTime = room.EndTime ?? throw new Exception("Round not started yet!");
-
-                int timeLimitSeconds = room.TimeLimit;
-
-                // get round info & all of users
-                List<RoomSubmit> submits = room.RoomSubmits[currentRound];
-                User[] allUsers = await _userService.GetUsers(room.UserIds.ToList());
-
-                List<Score> scores = [];
-                int i = 0;
-
-                foreach (RoomSubmit submit in submits)
-                {
-                    User u = allUsers.FirstOrDefault(user => user.UserId == submit.UserId)
-                        ?? throw new Exception("找不到對應的使用者");
-
-                    // get user score
-                    UserScore userScore = u.Scores.FirstOrDefault(s => s.RoundIndex == currentRound) ?? throw new Exception("找不到對應的分數");
-                    double totalRoundScore = u.Scores.Sum(s => s.Score);
-                    double currentRoundScore = userScore.Score;
-
-                    scores.Add(new Score
-                    {
-                        UserId = u.UserId,
-                        UserName = u.UserName,
-                        TotalRoundScore = totalRoundScore,
-                        CurrentRoundScore = currentRoundScore,
-                        Base64Image = i < 3 ? userScore.Base64Image : "",
-                        Comment = i < 3 ? userScore.Comment : ""
-                    });
-
-                    i++;
-                }
-
-                // do decresing-order
-                scores.Sort((a, b) => b.TotalRoundScore.CompareTo(a.TotalRoundScore));
-
+                List<Score> scores = await _rankService.GetRankInfo(roomId, userId);
                 await clients.Group(roomId).SendAsync("RankInfo", scores);
             }
             catch (Exception ex)
@@ -210,6 +220,36 @@ namespace server.Services
                 await clients.Caller.SendAsync("RankFailed", ex.Message);
             }
         }
-    
+
+        public async Task HandleUserDisconnected(IHubCallerClients clients, string connectionId)
+        {
+            try
+            {
+                Connection? connection = await _connectService.GetUserIdFromConnectionId(connectionId);
+
+                if (connection == null)
+                    return;
+
+                // get user from connection
+                User user = await _userService.GetUser(connection.UserId);
+
+                // delete connection
+                await _connectService.DeleteConnection(connectionId);
+
+                // delete user
+                await _userService.DeleteUser(user.UserId.ToString());
+
+                // update room record
+                Room room = await _roomService.GetRoom(user.RoomId);
+                await _roomService.RemoveUserFromRoom(room, user, connectionId);
+
+                // send updated room to all users
+                await clients.Group(room.RoomId).SendAsync("UserDisconnected", room);
+            }
+            catch (Exception ex)
+            {
+                await clients.Caller.SendAsync("UserDisconnectedFailed", ex.Message);
+            }
+        }
     }
 }

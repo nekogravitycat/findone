@@ -4,6 +4,18 @@ using server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add cors policy
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "https://findone.gravitycat.tw")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Configure Redis
 builder.Services.AddRedis(builder.Configuration);
 
@@ -16,12 +28,14 @@ builder.Services.AddSignalR(options =>
 // Register services
 builder.Services.AddSingleton<ImageService>();
 builder.Services.AddSingleton<GoogleAIService>();
-builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomService>();
 builder.Services.AddSingleton<UserService>();
 builder.Services.AddSingleton<ScoreService>();
-builder.Services.AddHostedService<RoomEventService>();
+builder.Services.AddSingleton<ConnectService>();
+builder.Services.AddSingleton<RankService>();
+builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoomEventService>();
+builder.Services.AddHostedService<RoomEventService>();
 
 // Add Controllers & Swagger
 builder.Services.AddControllers();
@@ -38,6 +52,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+
+app.UseCors();
+
 app.UseAuthorization();
 
 app.UseEndpoints(static endpoints =>
