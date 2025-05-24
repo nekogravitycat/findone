@@ -78,23 +78,13 @@ async function getVideoDevices(): Promise<void> {
   }
 }
 
-// Detect if the device is mobile
-function isMobileDevice(): boolean {
-  const ua = navigator.userAgent
-  return /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
-}
-
 // Switch between available cameras
 function switchCamera(): void {
-  if (isMobileDevice()) {
-    // For mobile devices, toggle between front and back camera
-    game.facingMode = game.facingMode === "user" ? "environment" : "user"
-  } else {
-    // For desktop devices, cycle through available cameras
-    const currentIndex = videoDevices.value.findIndex((d) => d.deviceId === selectedDeviceId.value)
-    const nextIndex = (currentIndex + 1) % videoDevices.value.length
-    selectedDeviceId.value = videoDevices.value[nextIndex].deviceId
-  }
+  game.facingMode = "environment"
+  // Cycle through available cameras
+  const currentIndex = videoDevices.value.findIndex((d) => d.deviceId === selectedDeviceId.value)
+  const nextIndex = (currentIndex + 1) % videoDevices.value.length
+  selectedDeviceId.value = videoDevices.value[nextIndex].deviceId
   startCamera()
 }
 
